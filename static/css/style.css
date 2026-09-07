@@ -132,6 +132,7 @@ img {
     top: 0;
     z-index: 20;
     padding: 1.15rem 0 0;
+    color: #9d5f78;
 }
 
 .nav-shell {
@@ -148,8 +149,11 @@ img {
 .brand {
     min-width: 0;
     overflow: hidden;
+    font-family: var(--font-sans);
+    
     font-size: 0.95rem;
     font-weight: 650;
+    font-style: italic;
     letter-spacing: -0.015em;
     text-decoration: none;
     text-overflow: ellipsis;
@@ -167,7 +171,7 @@ img {
     position: relative;
     padding: 0.5rem 0.8rem;
     border-radius: 10px;
-    color: var(--text-secondary);
+    color: #9d5f78;;
     font-size: 0.88rem;
     font-weight: 550;
     text-decoration: none;
@@ -188,7 +192,7 @@ img {
 }
 
 .site-header nav a:hover {
-    color: var(--text-primary);
+    color: var(--pastel-pink);
     background: rgba(255, 255, 255, 0.52);
 }
 
