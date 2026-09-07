@@ -471,6 +471,18 @@ img {
     background: linear-gradient(155deg, rgba(255, 255, 255, 0.7), rgba(221, 216, 246, 0.5));
 }
 
+.experience-card--competitions {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.72), rgba(247, 212, 191, 0.5));
+}
+
+.experience-card--projects {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.7), rgba(220, 234, 247, 0.56));
+}
+
+.experience-card--certifications {
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.72), rgba(221, 216, 246, 0.4));
+}
+
 .category-header {
     display: flex;
     min-height: 0;
@@ -679,10 +691,6 @@ img {
         min-height: 360px;
     }
 
-    .experience-card:last-child {
-        grid-column: 1 / -1;
-        min-height: 310px;
-    }
 }
 
 @media (max-width: 900px) {
@@ -744,9 +752,7 @@ img {
         grid-template-columns: 1fr;
     }
 
-    .experience-card,
-    .experience-card:last-child {
-        grid-column: auto;
+    .experience-card {
         min-height: auto;
     }
 
