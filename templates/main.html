@@ -1,52 +1,153 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portfolio of Rayna Kayla Rayvanka, a Computer Science student at Universitas Indonesia.">
     <title>Rayna Kayla Rayvanka - Portfolio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
+    <div class="background-decor" aria-hidden="true">
+        <span class="pastel-orb pastel-orb--yellow"></span>
+        <span class="pastel-orb pastel-orb--pink"></span>
+        <span class="pastel-orb pastel-orb--lavender"></span>
+        <span class="pastel-orb pastel-orb--blue"></span>
+    </div>
+
     <header class="site-header">
-        <div class="container">
-            <a href="#profile" class="brand">Rayna Kayla Rayvanka</a>
-            <nav>
+        <div class="container nav-shell glass-surface">
+            <a href="#profile" class="brand" aria-label="Rayna Kayla Rayvanka, back to profile">
+                Rayna Kayla Rayvanka
+            </a>
+            <nav aria-label="Primary navigation">
                 <a href="#profile">Profile</a>
+                <a href="#experience">Experience</a>
             </nav>
         </div>
     </header>
 
     <main>
-        <section class="hero" id="profile">
-            <div class="container hero-grid">
-                <div class="hero-identity">
-                    <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
-                    <h1>Rayna Kayla Rayvanka</h1>
-                </div>
-                <div class="hero-photo">
-                    <div class="photo-block"></div>
-                    <img class="avatar" src="/static/img/bubblegum.jpg" alt="Photo of Vanka">
-                </div>
-                <div class="hero-details">
-                    <p class="bio">CS student at Universitas Indonesia now a familiar (and slightly dreaded) face among Fasilkom students as a teaching assistant across several courses.</p>
-                    <dl class="meta-list">
-                        <div class="meta-row">
-                            <dt>NPM</dt>
-                            <dd>2506657283</dd>
+        <section class="hero section" id="profile" aria-labelledby="profile-title">
+            <div class="container">
+                <div class="profile-card glass-surface">
+                    <div class="profile-copy">
+                        <p class="eyebrow">Computer Science &middot; Universitas Indonesia</p>
+                        <h1 id="profile-title">Hi, I&rsquo;m Vanka.</h1>
+                        <p class="full-name">Rayna Kayla Rayvanka</p>
+                        <p class="bio">CS student at Universitas Indonesia now a familiar (and slightly dreaded) face among Fasilkom students as a teaching assistant across several courses.</p>
+
+                        <dl class="meta-list" aria-label="Profile details">
+                            <div class="meta-row">
+                                <dt>NPM</dt>
+                                <dd>2506657283</dd>
+                            </div>
+                            <div class="meta-row">
+                                <dt>Program</dt>
+                                <dd>S1 Ilmu Komputer</dd>
+                            </div>
+                            <div class="meta-row">
+                                <dt>Class</dt>
+                                <dd>PBP F</dd>
+                            </div>
+                        </dl>
+
+                        <div class="social-links" aria-label="Social links">
+                            <a href="https://github.com/" class="social-link">GitHub</a>
+                            <a href="https://linkedin.com/" class="social-link">LinkedIn</a>
+                            <a href="mailto:raynakyla@gmail.com" class="social-link">Email</a>
                         </div>
-                        <div class="meta-row">
-                            <dt>Program</dt>
-                            <dd>S1 Ilmu Komputer</dd>
-                        </div>
-                    </dl>
-                    <div class="social-links">
-                        <a href="https://github.com/" class="social-link">GitHub</a>
-                        <a href="https://linkedin.com/" class="social-link">LinkedIn</a>
-                        <a href="mailto:raynakyla@gmail.com" class="social-link">Email</a>
                     </div>
+
+                    <div class="profile-visual">
+                        <div class="photo-frame">
+                            <img class="avatar" src="{% static 'img/bubblegum.jpg' %}" alt="Portrait of Rayna Kayla Rayvanka">
+                        </div>
+                        <p class="photo-caption">Mahasiswa Ilmu Komputer</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="experience-section section" id="experience" aria-labelledby="experience-title">
+            <div class="container">
+                <header class="section-intro">
+                    <p class="eyebrow">02 &mdash; Experience</p>
+                    <h2 id="experience-title">Things I&rsquo;ve been part of.</h2>
+                    <p>A collection of experiences that shaped how I build, lead, and collaborate.</p>
+                </header>
+
+                <div class="experience-grid">
+                    <article class="experience-card experience-card--career" tabindex="0" aria-labelledby="career-title" aria-describedby="career-subtitle">
+                        <header class="category-header">
+                            <div class="category-meta">
+                                <span>01 / 03</span>
+                                <span class="category-mark" aria-hidden="true">+</span>
+                            </div>
+                            <div class="category-heading">
+                                <h3 id="career-title">Career</h3>
+                                <p id="career-subtitle">Internships &amp; professional experiences</p>
+                            </div>
+                        </header>
+
+                        <div class="experience-list-wrap">
+                            <ul class="experience-list">
+                                <li class="experience-item">
+                                    <div class="experience-item-heading">
+                                        <h4>Teaching Assistant</h4>
+                                    </div>
+                                    <p class="experience-role">Fakultas Ilmu Komputer, Universitas Indonesia</p>
+                                    <p class="experience-description">Supporting students across several courses.</p>
+                                </li>
+                                <!-- Add another verified Career experience as a new <li class="experience-item"> here. -->
+                            </ul>
+                        </div>
+                    </article>
+
+                    <article class="experience-card experience-card--organizations" tabindex="0" aria-labelledby="organizations-title" aria-describedby="organizations-subtitle">
+                        <header class="category-header">
+                            <div class="category-meta">
+                                <span>02 / 03</span>
+                                <span class="category-mark" aria-hidden="true">+</span>
+                            </div>
+                            <div class="category-heading">
+                                <h3 id="organizations-title">Organizations</h3>
+                                <p id="organizations-subtitle">Leadership &amp; communities</p>
+                            </div>
+                        </header>
+
+                        <div class="experience-list-wrap">
+                            <ul class="experience-list">
+                                <!-- Replace this clearly marked slot with a verified organization experience. -->
+                                <li class="experience-item experience-item--placeholder">
+                                    <p>Organization details ready to add.</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </article>
+
+                    <article class="experience-card experience-card--community" tabindex="0" aria-labelledby="community-title" aria-describedby="community-subtitle">
+                        <header class="category-header">
+                            <div class="category-meta">
+                                <span>03 / 03</span>
+                                <span class="category-mark" aria-hidden="true">+</span>
+                            </div>
+                            <div class="category-heading">
+                                <h3 id="community-title">Community</h3>
+                                <p id="community-subtitle">Volunteering, committees &amp; mentoring</p>
+                            </div>
+                        </header>
+
+                        <div class="experience-list-wrap">
+                            <ul class="experience-list">
+                                <!-- Replace this clearly marked slot with a verified community experience. -->
+                                <li class="experience-item experience-item--placeholder">
+                                    <p>Community details ready to add.</p>
+                                </li>
+                            </ul>
+                        </div>
+                    </article>
                 </div>
             </div>
         </section>
