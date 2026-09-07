@@ -570,8 +570,7 @@ img {
 }
 
 .experience-role,
-.experience-description,
-.experience-item--placeholder {
+.experience-description {
     color: var(--text-secondary);
     font-size: 0.82rem;
     line-height: 1.5;
@@ -585,10 +584,6 @@ img {
 
 .experience-description {
     margin-top: 0.4rem;
-}
-
-.experience-item--placeholder {
-    font-style: italic;
 }
 
 .experience-card:focus-visible {
