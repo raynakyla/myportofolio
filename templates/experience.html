@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="description"
+        content="Experience portfolio of Rayna Kayla Rayvanka, a Computer Science student at Universitas Indonesia."
+    >
+
+    <title>Experience - {{ name }}</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+
+<body>
+
+    <!-- BACKGROUND -->
+    <div class="background-decor" aria-hidden="true">
+        <span class="pastel-orb pastel-orb--yellow"></span>
+        <span class="pastel-orb pastel-orb--pink"></span>
+        <span class="pastel-orb pastel-orb--lavender"></span>
+        <span class="pastel-orb pastel-orb--blue"></span>
+    </div>
+
+
+    <!-- NAVBAR -->
+    <header class="site-header">
+
+        <div class="container nav-shell glass-surface">
+
+            <a
+                href="{% url 'main:show_main' %}"
+                class="brand"
+                aria-label="{{ name }}, back to profile"
+            >
+                {{ name }}
+            </a>
+
+            <nav aria-label="Primary navigation">
+
+                <a href="{% url 'main:show_main' %}"> Profile</a>
+
+                <a href="{% url 'main:show_experience' %}">Experience</a>
+
+            </nav>
+
+        </div>
+
+    </header>
+
+
+    <!-- EXPERIENCE -->
+    <main>
+
+        <section
+            class="experience-section section"
+            id="experience"
+            aria-labelledby="experience-title"
+        >
+
+            <div class="container">
+
+                <!-- Judul section -->
+                <header class="section-intro">
+
+                    <p class="eyebrow">
+                        02 &mdash; Experience
+                    </p>
+
+                    <h1 id="experience-title">
+                        things i&rsquo;ve been part of.
+                    </h1>
+
+                    <p>
+                        A collection of experiences that shaped how I build,
+                        lead, and collaborate.
+                    </p>
+
+                </header>
+
+
+                <!-- GRID -->
+                <div class="experience-grid">
+
+                    {% for experience in experience_list %}
+
+                        <article
+                            class="experience-card"
+                            tabindex="0"
+                            aria-labelledby="experience-{{ experience.id }}"
+                        >
+
+                            <!-- HEADER CARD -->
+                            <header class="category-header">
+
+                                <div class="category-meta">
+
+                                    <span>
+                                        {{ forloop.counter }}
+                                    </span>
+
+                                    <span
+                                        class="category-mark"
+                                        aria-hidden="true"
+                                    >
+                                        +
+                                    </span>
+
+                                </div>
+
+
+                                <div class="category-heading">
+
+                                    <h3 id="experience-{{ experience.id }}">
+                                        {{ experience.title }}
+                                    </h3>
+
+                                    <p>
+                                        {{ experience.get_category_display }}
+                                    </p>
+
+                                </div>
+
+                            </header>
+
+
+                            <!-- CONTENT -->
+                            <div class="experience-list-wrap">
+
+                                <ul class="experience-list">
+
+                                    <li class="experience-item">
+
+                                        <p class="experience-description">
+                                            {{ experience.description }}
+                                        </p>
+
+
+                                        {% if experience.is_ongoing %}
+
+                                            <p class="experience-status">
+                                                on-going
+                                            </p>
+
+                                        {% else %}
+
+                                            <p class="experience-status">
+                                                finished
+                                            </p>
+
+                                        {% endif %}
+
+                                    </li>
+
+                                </ul>
+
+                            </div>
+
+                        </article>
+
+
+                    {% empty %}
+
+                        <p class="empty-state">
+                            Belum ada pengalaman yang ditambahkan.
+                        </p>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+
+        <div class="container">
+
+            <p>
+                &copy; 2026 {{ name }}.
+                Fakultas Ilmu Komputer, Universitas Indonesia.
+            </p>
+
+        </div>
+
+    </footer>
+
+</body>
+
+</html>

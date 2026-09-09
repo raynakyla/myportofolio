@@ -1,14 +1,25 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Portfolio of Rayna Kayla Rayvanka, a Computer Science student at Universitas Indonesia.">
-    <title>Rayna Kayla Rayvanka - Portfolio</title>
+
+    <meta
+        name="description"
+        content="Portfolio of {{ name }}, a Computer Science student at Universitas Indonesia."
+    >
+
+    <title>{{ name }} - Portfolio</title>
+
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
+
+
 <body>
+
+    <!-- Background decoration -->
     <div class="background-decor" aria-hidden="true">
         <span class="pastel-orb pastel-orb--yellow"></span>
         <span class="pastel-orb pastel-orb--pink"></span>
@@ -16,215 +27,193 @@
         <span class="pastel-orb pastel-orb--blue"></span>
     </div>
 
+
+    <!-- Navbar -->
     <header class="site-header">
+
         <div class="container nav-shell glass-surface">
-            <a href="#profile" class="brand" arial-label="Rayna Kayla Rayvanka, back to profile">
-                Rayna Kayla Rayvanka
+
+            <a
+                href="{% url 'main:show_main' %}"
+                class="brand"
+                aria-label="{{ name }}, back to profile"
+            >
+                {{ name }}
             </a>
+
             <nav aria-label="Primary navigation">
-                <a href="#profile">Profile</a>
-                <a href="#experience">Experience</a>
+
+                <a href="{% url 'main:show_main' %}">
+                    Profile
+                </a>
+
+                <a href="{% url 'main:show_experience' %}">
+                    Experience
+                </a>
+
             </nav>
+
         </div>
+
     </header>
 
-    <main>
-        <section class="hero section" id="profile" aria-labelledby="profile-title">
-            <div class="container">
-                <div class="profile-card glass-surface">
-                    <div class="profile-copy">
-                        <p class="eyebrow">Computer Science &middot; Universitas Indonesia</p>
-                        <h1 id="profile-title">Hi, I&rsquo;m Vanka.</h1>
-                        <p class="full-name">Rayna Kayla Rayvanka</p>
-                        <p class="bio">Computer Science student at Universitas Indonesia 
-                                        who somehow keeps ending up in 
-                                        tech projects, events, and creative spaces 
-                                        — usually all at the same time.</p>
 
-                        <dl class="meta-list" aria-label="Profile details">
+    <!-- Main Content -->
+    <main>
+
+        <section
+            class="hero section"
+            id="profile"
+            aria-labelledby="profile-title"
+        >
+
+            <div class="container">
+
+                <div class="profile-card glass-surface">
+
+                    <!-- Profile text -->
+                    <div class="profile-copy">
+
+                        <p class="eyebrow">
+                            Computer Science &middot; Universitas Indonesia
+                        </p>
+
+                        <h1 id="profile-title">
+                            Hi, I&rsquo;m Vanka.
+                        </h1>
+
+                        <p class="full-name">
+                            {{ name }}
+                        </p>
+
+                        <p class="bio">
+                            {{ bio }}
+                        </p>
+
+
+                        <!-- Profile details -->
+                        <dl
+                            class="meta-list"
+                            aria-label="Profile details"
+                        >
+
                             <div class="meta-row">
-                                <dt>NPM</dt>
-                                <dd>2506657283</dd>
+
+                                <dt>
+                                    NPM
+                                </dt>
+
+                                <dd>
+                                    {{ npm }}
+                                </dd>
+
                             </div>
+
+
                             <div class="meta-row">
-                                <dt>Program</dt>
-                                <dd>S1 Ilmu Komputer</dd>
+
+                                <dt>
+                                    Program
+                                </dt>
+
+                                <dd>
+                                    {{ study_program }}
+                                </dd>
+
                             </div>
+
+
                             <div class="meta-row">
-                                <dt>Class</dt>
-                                <dd>PBP F</dd>
+
+                                <dt>
+                                    Class
+                                </dt>
+
+                                <dd>
+                                    PBP F
+                                </dd>
+
                             </div>
+
                         </dl>
 
-                        <div class="social-links" aria-label="Social links">
-                            <a href="https://github.com/" class="social-link">GitHub</a>
-                            <a href="https://linkedin.com/" class="social-link">LinkedIn</a>
-                            <a href="mailto:raynakyla@gmail.com" class="social-link">Email</a>
+
+                        <!-- Social links -->
+                        <div
+                            class="social-links"
+                            aria-label="Social links"
+                        >
+
+                            <a
+                                href="https://github.com/"
+                                class="social-link"
+                            >
+                                GitHub
+                            </a>
+
+
+                            <a
+                                href="https://linkedin.com/"
+                                class="social-link"
+                            >
+                                LinkedIn
+                            </a>
+
+
+                            <a
+                                href="mailto:raynakyla@gmail.com"
+                                class="social-link"
+                            >
+                                Email
+                            </a>
+
                         </div>
+
                     </div>
 
+
+                    <!-- Profile image -->
                     <div class="profile-visual">
+
                         <div class="photo-frame">
-                            <img class="avatar" src="{% static 'img/bubblegum.jpg' %}" alt="Portrait of Rayna Kayla Rayvanka">
+
+                            <img
+                                class="avatar"
+                                src="{% static 'img/bubblegum.jpg' %}"
+                                alt="Portrait of {{ name }}"
+                            >
+
                         </div>
-                        <p class="photo-caption">Mahasiswa Ilmu Komputer</p>
+
+                        <p class="photo-caption">
+                            Mahasiswa Ilmu Komputer
+                        </p>
+
                     </div>
+
                 </div>
+
             </div>
+
         </section>
 
-        <section class="experience-section section" id="experience" aria-labelledby="experience-title">
-            <div class="container">
-                <header class="section-intro">
-                    <p class="eyebrow">02 &mdash; Experience</p>
-                    <h2 id="experience-title">things i&rsquo;ve been part of.</h2>
-                    <p>A collection of experiences that shaped how I build, lead, and collaborate.</p>
-                </header>
-
-                <div class="experience-grid">
-                    <article class="experience-card experience-card--career" tabindex="0" aria-labelledby="career-title" aria-describedby="career-subtitle">
-                        <header class="category-header">
-                            <div class="category-meta">
-                                <span>01 / 06</span>
-                                <span class="category-mark" aria-hidden="true">+</span>
-                            </div>
-                            <div class="category-heading">
-                                <h3 id="career-title">Career</h3>
-                                <p id="career-subtitle">Internships &amp; professional experiences</p>
-                            </div>
-                        </header>
-
-                        <div class="experience-list-wrap">
-                            <ul class="experience-list">
-                                <li class="experience-item">
-                                    <div class="experience-item-heading">
-                                        <h4>Internships</h4>
-                                    </div>
-                                    <p class="experience-role">Presales Engineer Intern</p>
-                                    <p class="experience-description">Supported IT infrastructure presales through product research, BOQ preparation, requirement analysis, and technical solution support.</p>
-                                </li>
-                                <!-- TODO: add another verified Career experience here. -->
-                            </ul>
-                        </div>
-                    </article>
-
-                    <article class="experience-card experience-card--organizations" tabindex="0" aria-labelledby="organizations-title" aria-describedby="organizations-subtitle">
-                        <header class="category-header">
-                            <div class="category-meta">
-                                <span>02 / 06</span>
-                                <span class="category-mark" aria-hidden="true">+</span>
-                            </div>
-                            <div class="category-heading">
-                                <h3 id="organizations-title">Organizations</h3>
-                                <p id="organizations-subtitle">Leadership &amp; communities</p>
-                            </div>
-                        </header>
-
-                        <div class="experience-list-wrap">
-                            <ul class="experience-list">
-                                <li class="experience-item">
-                                    <div class="experience-item-heading">
-                                        <h4>BEM Fasilkom UI</h4>
-                                    </div>
-                                    <p class="experience-role">Staff of Arts &amp; Culture Department</p>
-                                    <p class="experience-description">Contributed to creative programs and student activities through the Arts &amp; Culture Department of BEM Fasilkom UI.</p>
-                                </li>
-                                <!-- TODO: add another verified Organizations experience here. -->
-                            </ul>
-                        </div>
-                    </article>
-
-                    <article class="experience-card experience-card--community" tabindex="0" aria-labelledby="community-title" aria-describedby="community-subtitle">
-                        <header class="category-header">
-                            <div class="category-meta">
-                                <span>03 / 06</span>
-                                <span class="category-mark" aria-hidden="true">+</span>
-                            </div>
-                            <div class="category-heading">
-                                <h3 id="community-title">Community</h3>
-                                <p id="community-subtitle">Volunteering, committees &amp; mentoring</p>
-                            </div>
-                        </header>
-
-                        <div class="experience-list-wrap">
-                            <ul class="experience-list">
-                                <li class="experience-item">
-                                    <div class="experience-item-heading">
-                                        <h4>DDP0 2026</h4>
-                                    </div>
-                                    <p class="experience-role">Head of Event Division</p>
-                                    <p class="experience-description">Led the Event Division and coordinated the planning and execution of DDP0 2026.</p>
-                                </li>
-                                <!-- mls nambahin -->
-                            </ul>
-                        </div>
-                    </article>
-
-                    <article class="experience-card experience-card--competitions" tabindex="0" aria-labelledby="competitions-title" aria-describedby="competitions-subtitle">
-                        <header class="category-header">
-                            <div class="category-meta">
-                                <span>04 / 06</span>
-                                <span class="category-mark" aria-hidden="true">+</span>
-                            </div>
-                            <div class="category-heading">
-                                <h3 id="competitions-title">Competitions</h3>
-                                <p id="competitions-subtitle">Challenges, competitions &amp; achievements</p>
-                            </div>
-                        </header>
-
-                        <div class="experience-list-wrap">
-                            <ul class="experience-list">
-                                <!-- mls nambahin -->
-                            </ul>
-                        </div>
-                    </article>
-
-                    <article class="experience-card experience-card--projects" tabindex="0" aria-labelledby="projects-title" aria-describedby="projects-subtitle">
-                        <header class="category-header">
-                            <div class="category-meta">
-                                <span>05 / 06</span>
-                                <span class="category-mark" aria-hidden="true">+</span>
-                            </div>
-                            <div class="category-heading">
-                                <h3 id="projects-title">Personal Projects</h3>
-                                <p id="projects-subtitle">Things I&rsquo;ve built, explored &amp; experimented with</p>
-                            </div>
-                        </header>
-
-                        <div class="experience-list-wrap">
-                            <ul class="experience-list">
-                                <!-- mls nambahin -->
-                            </ul>
-                        </div>
-                    </article>
-
-                    <article class="experience-card experience-card--certifications" tabindex="0" aria-labelledby="certifications-title" aria-describedby="certifications-subtitle">
-                        <header class="category-header">
-                            <div class="category-meta">
-                                <span>06 / 06</span>
-                                <span class="category-mark" aria-hidden="true">+</span>
-                            </div>
-                            <div class="category-heading">
-                                <h3 id="certifications-title">Certifications</h3>
-                                <p id="certifications-subtitle">Courses, credentials &amp; continuous learning</p>
-                            </div>
-                        </header>
-
-                        <div class="experience-list-wrap">
-                            <ul class="experience-list">
-                                <!-- mls nambahin -->
-                            </ul>
-                        </div>
-                    </article>
-                </div>
-            </div>
-        </section>
     </main>
 
+
+    <!-- Footer -->
     <footer class="site-footer">
+
         <div class="container">
-            <p>&copy; 2026 Rayna Kayla Rayvanka. Fakultas Ilmu Komputer, Universitas Indonesia.</p>
+
+            <p>
+                &copy; 2026 {{ name }}.
+                Fakultas Ilmu Komputer, Universitas Indonesia.
+            </p>
+
         </div>
+
     </footer>
+
 </body>
+
 </html>
