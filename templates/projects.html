@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Projects by {{ name }}, a Computer Science student at Universitas Indonesia.">
+    <title>Projects - {{ name }}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="background-decor" aria-hidden="true">
+        <span class="pastel-orb pastel-orb--yellow"></span>
+        <span class="pastel-orb pastel-orb--pink"></span>
+        <span class="pastel-orb pastel-orb--lavender"></span>
+        <span class="pastel-orb pastel-orb--blue"></span>
+    </div>
+
+    <header class="site-header">
+        <div class="container nav-shell glass-surface">
+            <a href="{% url 'main:show_main' %}" class="brand" aria-label="{{ name }}, back to profile">{{ name }}</a>
+            <nav aria-label="Primary navigation">
+                <a href="{% url 'main:show_main' %}">Profile</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
+                <a href="{% url 'main:show_projects' %}" aria-current="page">Projects</a>
+                {% url 'main:show_album' as album_url %}
+                {% if album_url %}
+                <a href="{{ album_url }}">Album</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="projects-section section" aria-labelledby="projects-title">
+            <div class="container">
+                <header class="section-intro">
+                    <p class="eyebrow">03 &mdash; Projects</p>
+                    <h1 id="projects-title">ideas i&rsquo;ve brought to life.</h1>
+                    <p>A collection of things I build, design, and explore.</p>
+                </header>
+
+                <div class="projects-grid">
+                    {% for project in project_list %}
+                    <article class="project-card glass-surface" aria-labelledby="project-{{ project.id }}">
+                        {% if project.thumbnail %}
+                        <img class="project-thumbnail" src="{{ project.thumbnail }}" alt="Preview of {{ project.title }}" loading="lazy" width="640" height="360">
+                        {% else %}
+                        <div class="project-placeholder" aria-hidden="true">
+                            <span class="project-placeholder-mark">{{ project.title|first }}</span>
+                            <span>{{ project.get_category_display }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="project-content">
+                            <div class="project-badges">
+                                <span class="project-category">{{ project.get_category_display }}</span>
+                                {% if project.is_featured %}
+                                <span class="featured-badge">Featured</span>
+                                {% endif %}
+                            </div>
+                            <h2 id="project-{{ project.id }}">{{ project.title }}</h2>
+                            <p class="project-description">{{ project.description }}</p>
+                            <dl class="project-details">
+                                <div class="project-role">
+                                    <dt>My role</dt>
+                                    <dd>{{ project.role }}</dd>
+                                </div>
+                                <div class="project-skills">
+                                    <dt>Skills</dt>
+                                    <dd>{{ project.skills }}</dd>
+                                </div>
+                            </dl>
+                            {% if project.project_url %}
+                            <a class="project-link social-link" href="{{ project.project_url }}" target="_blank" rel="noopener noreferrer" aria-label="View Project: {{ project.title }} (opens in a new tab)">View Project <span aria-hidden="true">&nearr;</span></a>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% empty %}
+                    <div class="projects-empty-state glass-surface">
+                        <span class="projects-empty-mark" aria-hidden="true">&plus;</span>
+                        <h2>No projects have been added yet.</h2>
+                        <p>A little space for the next idea.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>
+                &copy; 2026 {{ name }}.
+                Fakultas Ilmu Komputer, Universitas Indonesia.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

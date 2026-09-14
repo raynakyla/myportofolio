@@ -51,6 +51,15 @@
                     Experience
                 </a>
 
+                <a href="{% url 'main:show_projects' %}">Projects</a>
+
+                {% url 'main:show_album' as album_url %}
+                {% if album_url %}
+                <a href="{{ album_url }}">
+                    Album
+                </a>
+                {% endif %}
+
             </nav>
 
         </div>
