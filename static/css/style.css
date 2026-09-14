@@ -56,7 +56,7 @@ img {
 }
 
 .container {
-    width: min(calc(100% - 3rem), var(--page-width));
+    width: min(calc(90% - 3rem), var(--page-width));
     margin-inline: auto;
 }
 
@@ -211,7 +211,7 @@ img {
 /* Profile */
 
 .hero {
-    padding: clamp(3.75rem, 8vw, 7.5rem) 0 clamp(3.5rem, 7vw, 6rem);
+    padding: clamp(2rem, 4vw, 4rem) 0 clamp(3.5rem, 7vw, 6rem);
 }
 
 .profile-card {
@@ -219,9 +219,9 @@ img {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
     align-items: center;
-    gap: clamp(2.5rem, 7vw, 6.5rem);
+    gap: clamp(2rem, 7vw, 6.5rem);
     overflow: hidden;
-    padding: clamp(2rem, 5.5vw, 5rem);
+    padding: clamp(2.5rem, 5.5vw, 5rem);
     border-radius: var(--radius-large);
     transition: box-shadow 250ms ease, transform 250ms ease;
 }
@@ -668,6 +668,163 @@ img {
     }
 }
 
+/* Projects */
+
+.projects-section {
+    padding: clamp(3.5rem, 7vw, 6rem) 0 clamp(5rem, 10vw, 8rem);
+}
+
+.projects-section .section-intro h1 {
+    font-size: clamp(2.25rem, 5vw, 4.2rem);
+    font-weight: 650;
+    letter-spacing: -0.05em;
+    line-height: 1.02;
+}
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-top: clamp(2.25rem, 5vw, 4rem);
+}
+
+.project-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--radius-large);
+    transition: box-shadow 250ms ease, transform 250ms ease;
+}
+
+.project-card:hover,
+.project-card:focus-within {
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-3px);
+}
+
+.project-thumbnail,
+.project-placeholder {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.project-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-lavender), var(--pastel-blue));
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.project-card:nth-child(even) .project-placeholder {
+    background: linear-gradient(135deg, var(--pastel-yellow), var(--pastel-peach), var(--pastel-pink));
+}
+
+.project-placeholder-mark,
+.projects-empty-mark {
+    display: grid;
+    place-items: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-medium);
+    background: var(--glass-fill);
+    box-shadow: var(--shadow-soft);
+    font-size: 2rem;
+}
+
+.project-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    overflow-wrap: anywhere;
+}
+
+.project-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.project-category,
+.featured-badge {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 100px;
+    background: var(--glass-fill-strong);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.featured-badge {
+    background: var(--pastel-yellow);
+}
+
+.project-content h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    letter-spacing: -0.035em;
+    line-height: 1.2;
+}
+
+.project-description {
+    white-space: pre-line;
+}
+
+.project-details {
+    display: grid;
+    gap: 0.8rem;
+    width: 100%;
+    padding-block: 1rem;
+    border-block: 1px solid var(--line-soft);
+    font-size: 0.9rem;
+}
+
+.project-details dt {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 650;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.project-link {
+    gap: 0.75rem;
+    margin-top: auto;
+    flex: 0 0 auto;
+}
+
+.projects-empty-state {
+    grid-column: 1 / -1;
+    padding: clamp(2rem, 6vw, 4rem) 1.5rem;
+    border-radius: var(--radius-large);
+    text-align: center;
+}
+
+.projects-empty-mark {
+    margin: 0 auto 1.5rem;
+}
+
+.projects-empty-state h2 {
+    font-size: clamp(1.2rem, 3vw, 1.75rem);
+}
+
+.projects-empty-state p {
+    margin-top: 0.5rem;
+    color: var(--text-secondary);
+}
+
 /* Footer */
 
 .site-footer {
@@ -720,6 +877,10 @@ img {
 }
 
 @media (max-width: 720px) {
+    .projects-grid {
+        grid-template-columns: 1fr;
+    }
+
     html {
         scroll-padding-top: 9.5rem;
     }
