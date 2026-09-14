@@ -4,7 +4,7 @@ from django.utils import timezone
 
 # Create your tests here.
 
-from main.models import Experience
+from main.models import Experience, Project
 
 
 class MainTest(TestCase):
@@ -124,3 +124,87 @@ class MainTest(TestCase):
             response,
             "Sedang berlangsung"
         )
+
+
+class ProjectTest(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(
+            title="Sample project",
+            description="A prototype for collaborative learning.",
+            category="product",
+            role="Designer",
+            skills="UX Design, Prototyping",
+        )
+
+    def test_projects_url_and_template(self):
+        self.assertEqual(reverse("main:show_projects"), "/projects/")
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "projects.html")
+        self.assertEqual(list(response.context["project_list"]), [self.project])
+
+    def test_project_content_and_optional_fields_absent(self):
+        response = self.client.get(reverse("main:show_projects"))
+        for value in [self.project.title, self.project.description,
+                      self.project.role, self.project.skills, "Product &amp; UX"]:
+            self.assertContains(response, value)
+        self.assertContains(response, 'class="project-placeholder"')
+        self.assertNotContains(response, "View Project")
+        self.assertNotContains(response, "Featured")
+        self.assertNotContains(response, 'class="project-thumbnail"')
+
+    def test_empty_projects_page(self):
+        Project.objects.all().delete()
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertContains(response, "No projects have been added yet.")
+        self.assertNotContains(response, "View Project")
+
+    def test_project_model(self):
+        import uuid
+
+        self.assertEqual(str(self.project), self.project.title)
+        self.assertIsInstance(self.project.id, uuid.UUID)
+        self.assertEqual(self.project.thumbnail, "")
+        self.assertEqual(self.project.project_url, "")
+        self.assertFalse(self.project.is_featured)
+        self.project.full_clean()
+
+    def test_featured_thumbnail_and_project_link(self):
+        self.project.is_featured = True
+        self.project.thumbnail = "https://example.com/preview.png"
+        self.project.project_url = "https://example.com/project/"
+        self.project.save()
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertContains(response, "Featured")
+        self.assertContains(response, "View Project")
+        self.assertContains(response, f'href="{self.project.project_url}"')
+        self.assertContains(response, f'src="{self.project.thumbnail}"')
+        self.assertContains(response, f'alt="Preview of {self.project.title}"')
+        self.assertNotContains(response, 'class="project-placeholder"')
+
+    def test_all_projects_displayed_in_featured_then_title_order(self):
+        featured_z = Project.objects.create(
+            title="Z project", category="web", description="Website",
+            role="Developer", skills="Django", is_featured=True,
+        )
+        featured_a = Project.objects.create(
+            title="A project", category="creative", description="Illustration",
+            role="Artist", skills="Drawing", is_featured=True,
+        )
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertEqual(list(response.context["project_list"]),
+                         [featured_a, featured_z, self.project])
+        for project in [featured_a, featured_z, self.project]:
+            self.assertContains(response, project.title)
+        self.assertContains(response, "Web Development")
+        self.assertContains(response, "Creative Work")
+
+    def test_navigation_and_footer_on_all_pages(self):
+        routes = ["main:show_main", "main:show_experience", "main:show_projects"]
+        for route in routes:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertEqual(response.status_code, 200)
+                for target in routes:
+                    self.assertContains(response, f'href="{reverse(target)}"')
+                self.assertContains(response, "Fakultas Ilmu Komputer, Universitas Indonesia.")
