@@ -1,67 +1,15 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+{% block meta %}
     <meta
         name="description"
         content="Experience portfolio of Rayna Kayla Rayvanka, a Computer Science student at Universitas Indonesia."
     >
 
     <title>Experience - {{ name }}</title>
+{% endblock meta %}
 
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-
-
-<body>
-
-    <!-- BACKGROUND -->
-    <div class="background-decor" aria-hidden="true">
-        <span class="pastel-orb pastel-orb--yellow"></span>
-        <span class="pastel-orb pastel-orb--pink"></span>
-        <span class="pastel-orb pastel-orb--lavender"></span>
-        <span class="pastel-orb pastel-orb--blue"></span>
-    </div>
-
-
-    <!-- NAVBAR -->
-    <header class="site-header">
-
-        <div class="container nav-shell glass-surface">
-
-            <a
-                href="{% url 'main:show_main' %}"
-                class="brand"
-                aria-label="{{ name }}, back to profile"
-            >
-                {{ name }}
-            </a>
-
-            <nav aria-label="Primary navigation">
-
-                <a href="{% url 'main:show_main' %}"> Profile</a>
-
-                <a href="{% url 'main:show_experience' %}">Experience</a>
-
-                <a href="{% url 'main:show_projects' %}">Projects</a>
-
-                {% url 'main:show_album' as album_url %}
-                {% if album_url %}
-                <a href="{{ album_url }}">Album</a>
-                {% endif %}
-
-            </nav>
-
-        </div>
-
-    </header>
-
-
-    <!-- EXPERIENCE -->
+{% block content %}
     <main>
 
         <section
@@ -90,8 +38,7 @@
 
                 </header>
 
-
-                <!-- GRID -->
+                <!-- Grid -->
                 <div class="experience-grid">
 
                     {% for experience in experience_list %}
@@ -102,7 +49,7 @@
                             aria-labelledby="experience-{{ experience.id }}"
                         >
 
-                            <!-- HEADER CARD -->
+                            <!-- Header card -->
                             <header class="category-header">
 
                                 <div class="category-meta">
@@ -120,7 +67,6 @@
 
                                 </div>
 
-
                                 <div class="category-heading">
 
                                     <h3 id="experience-{{ experience.id }}">
@@ -135,8 +81,7 @@
 
                             </header>
 
-
-                            <!-- CONTENT -->
+                            <!-- Content -->
                             <div class="experience-list-wrap">
 
                                 <ul class="experience-list">
@@ -147,19 +92,14 @@
                                             {{ experience.description }}
                                         </p>
 
-
                                         {% if experience.is_ongoing %}
-
                                             <p class="experience-status">
                                                 on-going
                                             </p>
-
                                         {% else %}
-
                                             <p class="experience-status">
                                                 finished
                                             </p>
-
                                         {% endif %}
 
                                     </li>
@@ -169,7 +109,6 @@
                             </div>
 
                         </article>
-
 
                     {% empty %}
 
@@ -186,22 +125,4 @@
         </section>
 
     </main>
-
-
-    <!-- FOOTER -->
-    <footer class="site-footer">
-
-        <div class="container">
-
-            <p>
-                &copy; 2026 {{ name }}.
-                Fakultas Ilmu Komputer, Universitas Indonesia.
-            </p>
-
-        </div>
-
-    </footer>
-
-</body>
-
-</html>
+{% endblock content %}

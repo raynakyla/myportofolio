@@ -1,0 +1,82 @@
+<button
+    type="button"
+    class="button button-danger-outline"
+    popovertarget="delete-project-{{ project.id }}"
+    aria-label="Delete {{ project.title }}"
+>
+    Delete
+</button>
+
+<div
+    id="delete-project-{{ project.id }}"
+    class="project-delete-modal"
+    popover="auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="delete-title-{{ project.id }}"
+>
+
+    <button
+        type="button"
+        class="project-delete-modal__backdrop"
+        popovertarget="delete-project-{{ project.id }}"
+        popovertargetaction="hide"
+        aria-label="Close delete confirmation"
+    ></button>
+
+    <div class="project-delete-modal__content glass-surface">
+
+        <button
+            type="button"
+            class="project-delete-modal__close"
+            popovertarget="delete-project-{{ project.id }}"
+            popovertargetaction="hide"
+            aria-label="Close delete confirmation"
+        >
+            &times;
+        </button>
+
+        <p class="eyebrow">
+            Delete project
+        </p>
+
+        <h2 id="delete-title-{{ project.id }}">
+            Let this project go?
+        </h2>
+
+        <p>
+            Are you sure you want to delete
+            <strong>{{ project.title }}</strong>?
+            This action cannot be undone.
+        </p>
+
+        <div class="project-delete-modal__actions">
+
+            <button
+                type="button"
+                class="button button-secondary"
+                popovertarget="delete-project-{{ project.id }}"
+                popovertargetaction="hide"
+            >
+                Keep It
+            </button>
+
+            <form
+                method="post"
+                action="{% url 'main:delete_project' project.id %}"
+            >
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="button button-danger"
+                >
+                    Yes, Delete
+                </button>
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
