@@ -1,73 +1,16 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+{% block meta %}
     <meta
         name="description"
         content="Portfolio of {{ name }}, a Computer Science student at Universitas Indonesia."
     >
 
     <title>{{ name }} - Portfolio</title>
+{% endblock meta %}
 
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-
-
-<body>
-
-    <!-- Background decoration -->
-    <div class="background-decor" aria-hidden="true">
-        <span class="pastel-orb pastel-orb--yellow"></span>
-        <span class="pastel-orb pastel-orb--pink"></span>
-        <span class="pastel-orb pastel-orb--lavender"></span>
-        <span class="pastel-orb pastel-orb--blue"></span>
-    </div>
-
-
-    <!-- Navbar -->
-    <header class="site-header">
-
-        <div class="container nav-shell glass-surface">
-
-            <a
-                href="{% url 'main:show_main' %}"
-                class="brand"
-                aria-label="{{ name }}, back to profile"
-            >
-                {{ name }}
-            </a>
-
-            <nav aria-label="Primary navigation">
-
-                <a href="{% url 'main:show_main' %}">
-                    Profile
-                </a>
-
-                <a href="{% url 'main:show_experience' %}">
-                    Experience
-                </a>
-
-                <a href="{% url 'main:show_projects' %}">Projects</a>
-
-                {% url 'main:show_album' as album_url %}
-                {% if album_url %}
-                <a href="{{ album_url }}">
-                    Album
-                </a>
-                {% endif %}
-
-            </nav>
-
-        </div>
-
-    </header>
-
-
-    <!-- Main Content -->
+{% block content %}
     <main>
 
         <section
@@ -99,7 +42,6 @@
                             {{ bio }}
                         </p>
 
-
                         <!-- Profile details -->
                         <dl
                             class="meta-list"
@@ -107,45 +49,21 @@
                         >
 
                             <div class="meta-row">
-
-                                <dt>
-                                    NPM
-                                </dt>
-
-                                <dd>
-                                    {{ npm }}
-                                </dd>
-
+                                <dt>NPM</dt>
+                                <dd>{{ npm }}</dd>
                             </div>
 
-
                             <div class="meta-row">
-
-                                <dt>
-                                    Program
-                                </dt>
-
-                                <dd>
-                                    {{ study_program }}
-                                </dd>
-
+                                <dt>Program</dt>
+                                <dd>{{ study_program }}</dd>
                             </div>
 
-
                             <div class="meta-row">
-
-                                <dt>
-                                    Class
-                                </dt>
-
-                                <dd>
-                                    PBP F
-                                </dd>
-
+                                <dt>Class</dt>
+                                <dd>PBP F</dd>
                             </div>
 
                         </dl>
-
 
                         <!-- Social links -->
                         <div
@@ -160,14 +78,12 @@
                                 GitHub
                             </a>
 
-
                             <a
                                 href="https://linkedin.com/"
                                 class="social-link"
                             >
                                 LinkedIn
                             </a>
-
 
                             <a
                                 href="mailto:raynakyla@gmail.com"
@@ -180,18 +96,15 @@
 
                     </div>
 
-
                     <!-- Profile image -->
                     <div class="profile-visual">
 
                         <div class="photo-frame">
-
                             <img
                                 class="avatar"
                                 src="{% static 'img/bubblegum.jpg' %}"
                                 alt="Portrait of {{ name }}"
                             >
-
                         </div>
 
                         <p class="photo-caption">
@@ -207,22 +120,4 @@
         </section>
 
     </main>
-
-
-    <!-- Footer -->
-    <footer class="site-footer">
-
-        <div class="container">
-
-            <p>
-                &copy; 2026 {{ name }}.
-                Fakultas Ilmu Komputer, Universitas Indonesia.
-            </p>
-
-        </div>
-
-    </footer>
-
-</body>
-
-</html>
+{% endblock content %}

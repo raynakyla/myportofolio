@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block meta %}
+<title>Add Project - {{ name }}</title>
+{% endblock meta %}
+
+{% block content %}
+<main>
+    <section
+        class="project-form-section section"
+        aria-labelledby="project-form-title"
+    >
+        <div class="container project-form-shell">
+            <a
+                href="{% url 'main:show_projects' %}"
+                class="project-form-back"
+            >
+                <span aria-hidden="true">&larr;</span>
+                Back to projects
+            </a>
+
+            <header class="project-form-intro">
+                <p class="eyebrow">New creation</p>
+                <h1 id="project-form-title">Add a new project.</h1>
+                <p>
+                    Capture the story, your role, and the details that make
+                    this work worth remembering.
+                </p>
+            </header>
+
+            <form
+                method="post"
+                action="{% url 'main:create_project' %}"
+                class="project-form glass-surface"
+            >
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">
+                            {{ field.label }}
+                        </label>
+
+                        {{ field }}
+
+                        {% if field.help_text %}
+                            <p class="form-help">
+                                {{ field.help_text }}
+                            </p>
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                            <p class="form-error">
+                                {{ error }}
+                            </p>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                {% for error in form.non_field_errors %}
+                    <p class="form-error">
+                        {{ error }}
+                    </p>
+                {% endfor %}
+
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary">
+                        <span aria-hidden="true">&plus;</span>
+                        Add project
+                    </button>
+
+                    <a
+                        href="{% url 'main:show_projects' %}"
+                        class="button button-quiet"
+                    >
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+{% endblock content %}

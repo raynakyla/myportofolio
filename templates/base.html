@@ -1,0 +1,66 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    {% block meta %}
+    {% endblock meta %}
+</head>
+
+<body>
+    <div class="background-decor" aria-hidden="true">
+        <span class="pastel-orb pastel-orb--yellow"></span>
+        <span class="pastel-orb pastel-orb--pink"></span>
+        <span class="pastel-orb pastel-orb--lavender"></span>
+        <span class="pastel-orb pastel-orb--blue"></span>
+    </div>
+
+    <header class="site-header">
+        <div class="container nav-shell glass-surface">
+            <a
+                href="{% url 'main:show_main' %}"
+                class="brand"
+                aria-label="{{ name }}, back to profile"
+            >
+                {{ name }}
+            </a>
+
+            <nav aria-label="Primary navigation">
+                <a href="{% url 'main:show_main' %}">Profile</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
+                <a href="{% url 'main:show_projects' %}">Projects</a>
+            </nav>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div
+        class="message-container container"
+        aria-live="polite"
+    >
+        {% for message in messages %}
+            <div class="message message--{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+    {% block content %}
+    {% endblock content %}
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>
+                &copy; 2026 {{ name }}.
+                Fakultas Ilmu Komputer, Universitas Indonesia.
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

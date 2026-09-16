@@ -143,6 +143,56 @@ class ProjectTest(TestCase):
         self.assertTemplateUsed(response, "projects.html")
         self.assertEqual(list(response.context["project_list"]), [self.project])
 
+    def test_create_project_form_is_accessible(self):
+        response = self.client.get(reverse("main:create_project"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "projects_form.html")
+        for field_name in [
+            "title",
+            "description",
+            "category",
+            "role",
+            "skills",
+            "thumbnail",
+            "project_url",
+            "is_featured",
+        ]:
+            self.assertContains(response, f'name="{field_name}"')
+
+    def test_create_project_with_valid_form(self):
+        response = self.client.post(
+            reverse("main:create_project"),
+            {
+                "title": "Tutorial 3 project",
+                "description": "Created through the project form.",
+                "category": "web",
+                "role": "Developer",
+                "skills": "Django, HTML, CSS",
+                "thumbnail": "",
+                "project_url": "",
+            },
+        )
+
+        self.assertRedirects(response, reverse("main:show_projects"))
+        self.assertTrue(Project.objects.filter(title="Tutorial 3 project").exists())
+
+    def test_create_project_rejects_invalid_form(self):
+        response = self.client.post(
+            reverse("main:create_project"),
+            {
+                "title": "",
+                "description": "Missing a required title.",
+                "category": "web",
+                "role": "Developer",
+                "skills": "Django",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "title", "This field is required.")
+        self.assertFalse(Project.objects.filter(description="Missing a required title.").exists())
+
     def test_project_content_and_optional_fields_absent(self):
         response = self.client.get(reverse("main:show_projects"))
         for value in [self.project.title, self.project.description,
