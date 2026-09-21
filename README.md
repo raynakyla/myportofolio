@@ -85,3 +85,101 @@ Saya tetap menentukan konsep halaman, isi project, dan tema glassmorphism yang d
 Log percakapan:
 
 - https://chatgpt.com/c/6aa819fb-49e0-83ec-9520-f4592e92385f
+
+## Menjalankan Proyek Secara Lokal
+
+Proyek ini menggunakan Django dan dikembangkan dengan virtual environment
+`env` pada Windows. Langkah setup dari PowerShell:
+
+```powershell
+python -m venv env
+.\env\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+$env:PRODUCTION = 'False'  # gunakan SQLite development lokal
+python manage.py migrate
+python manage.py test
+python manage.py runserver
+```
+
+Setelah server berjalan, buka `http://127.0.0.1:8000/`. File `.env`, database
+`db.sqlite3`, folder `env`, dan kredensial tidak boleh dimasukkan ke Git.
+Migration `0003_align_experience_categories` mempertahankan record Experience lama
+sambil memetakan kategori teknis lama ke enam kategori portofolio yang dipakai
+oleh desain saat ini.
+
+Migration `0004_experience_optional_start_date` membuat `started_at` opsional
+dan dapat diisi di form. Sebelumnya `auto_now_add` mencatat waktu penambahan
+record, sehingga pengalaman yang selesai sebelum dicatat dapat memiliki urutan
+tanggal yang salah. Semua nilai tanggal lama tetap disimpan persis seperti
+sebelumnya; tanggal sebenarnya tidak ditebak atau diisi ulang. Pemilik data dapat
+mengoreksi tanggal lama lewat Edit jika diperlukan. Tanggal kosong berarti belum
+diketahui; waktu pada form mengikuti konfigurasi proyek, yaitu UTC. Jika kedua
+tanggal diisi, tanggal selesai harus sama atau setelah tanggal mulai.
+
+Pemetaan kategori pada migration `0003` menggabungkan beberapa kategori lama.
+Rollback migration itu tidak mengembalikan subkategori awal secara persis
+(misalnya internship dan freelance sama-sama menjadi career); simpan backup
+database sebelum melakukan rollback. Migration yang sudah diterapkan tidak
+ditulis ulang dalam audit lanjutan.
+
+## Fitur Experience Management
+
+Halaman Experience mempertahankan enam kelompok desain: Career,
+Organizations, Community, Competition, Personal Project, dan Certification.
+Data di halaman tersebut berasal dari endpoint JSON, dideserialisasi kembali
+menjadi objek Django, lalu dikelompokkan untuk ditampilkan pada card yang
+sesuai. Fitur yang tersedia meliputi:
+
+- melihat daftar dan empty state di `/experience/`;
+- menambah pengalaman di `/experience/add/`;
+- mengubah pengalaman di `/experience/<uuid>/edit/`;
+- menghapus pengalaman melalui form POST di `/experience/<uuid>/delete/`;
+- mengambil data JSON di `/api/experiences/`.
+
+Untuk memeriksa perubahan sebelum menjalankan server:
+
+```powershell
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+```
+
+### Tugas 3
+
+1. **Penggunaan Django ModelForm dan CSRF**
+
+   Django `ModelForm` digunakan untuk membantu membuat form berdasarkan model yang sudah ada. Jadi, aturan seperti field wajib atau opsional, pilihan kategori, tipe data, dan validasi bisa mengikuti aturan yang ada di model. Dengan cara ini, kita tidak perlu menulis semua aturan secara manual di HTML, sehingga kode lebih rapi dan mengurangi kemungkinan adanya perbedaan antara form dan database.
+
+   Pada form yang menggunakan metode POST, `{% csrf_token %}` wajib ditambahkan untuk membantu melindungi aplikasi dari serangan Cross-Site Request Forgery (CSRF). Serangan ini terjadi ketika website lain mencoba mengirimkan request yang mengubah data menggunakan sesi pengguna tanpa sepengetahuan pengguna tersebut.
+
+   Django juga melakukan pemeriksaan keamanan tambahan melalui middleware, termasuk pemeriksaan Origin atau Referer dalam kondisi tertentu.
+
+2. **Perbandingan JSON dan XML**
+
+   JSON lebih sering digunakan dalam aplikasi web modern karena sintaksnya sederhana, mudah dibaca, dan biasanya memiliki ukuran data yang lebih ringkas. JSON juga mudah digunakan dalam JavaScript karena mendukung struktur object dan array.
+
+   Sementara itu, XML masih digunakan pada sistem tertentu yang membutuhkan namespace, schema, atau struktur dokumen yang lebih ketat. Namun, XML biasanya membutuhkan tag pembuka dan penutup, sehingga penulisannya bisa lebih panjang dibandingkan JSON.
+
+3. **Proses Serialization dan Deserialization**
+
+   Ketika URL `/api/experiences/` dipanggil, view mengambil data Experience dari database menggunakan queryset. Kemudian, `serializers.serialize("json", queryset)` digunakan untuk mengubah data tersebut menjadi format JSON yang bisa dikirim melalui HTTP response.
+
+   Serialization diperlukan karena object Django dan queryset Python tidak bisa langsung dikirim sebagai data HTTP dalam bentuk aslinya. Data tersebut perlu diubah terlebih dahulu ke format yang dapat dipertukarkan.
+
+   Pada halaman `/experience/`, data JSON dibaca dan diproses menggunakan `serializers.deserialize`. Hasilnya kemudian dikelompokkan berdasarkan kategori dan dikirim ke template untuk ditampilkan.
+
+   Jadi, alurnya adalah data diubah dari object Django menjadi JSON, kemudian diproses kembali agar bisa digunakan oleh kode Python dan ditampilkan di halaman web.
+
+#### Penggunaan AI pada Tugas 3
+
+Pada Tugas 3, saya menggunakan ChatGPT sebagai alat bantu selama proses pengerjaan dan pengecekan project. Saya memanfaatkan AI untuk membantu memahami instruksi Tugas 3 dan Tutorial 3, mencari penyebab error, serta memeriksa apakah implementasi yang saya buat sudah sesuai dengan ketentuan tugas.
+
+Saya juga menggunakan AI untuk berdiskusi mengenai beberapa bagian implementasi, seperti `ExperienceForm`, CRUD Experience, endpoint JSON, routing UUID, migration, template, styling, dan unit test. Ketika menemukan error atau hasil yang belum sesuai, saya meminta bantuan AI untuk memahami masalahnya dan mencari solusi yang tepat.
+
+AI saya gunakan sebagai pendamping dalam proses pengerjaan, bukan sebagai pengganti pemahaman dan keputusan saya sendiri. Saya tetap perlu memahami kode yang digunakan, memeriksa hasil perubahan, dan memastikan implementasinya sesuai dengan kebutuhan project.
+
+Selama proses audit, saya meminta bantuan AI untuk mengidentifikasi beberapa masalah, seperti POST kosong yang tidak menampilkan error, validasi urutan tanggal, serta perilaku popover konfirmasi penghapusan pada tampilan browser. Dari proses tersebut, saya mendapatkan saran perbaikan yang kemudian saya periksa kembali melalui pengujian dan pengecekan secara langsung.
+
+Saya melakukan verifikasi menggunakan Django system check, migration dry-run, test suite, dan pemeriksaan tampilan melalui browser lokal. Dengan begitu, saya tidak hanya mengandalkan hasil dari AI, tetapi juga memastikan bahwa perubahan yang dilakukan benar-benar sesuai dengan project saya.
+
+Penggunaan AI dalam tugas ini membantu saya memahami langkah-langkah pengerjaan dan menemukan kesalahan selama proses pengembangan. Saya tetap bertanggung jawab untuk memahami, memeriksa, dan memastikan hasil akhir implementasi.

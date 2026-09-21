@@ -2,18 +2,59 @@ from django.contrib import messages
 from django.core import serializers
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
-from main.forms import ProjectForm
+from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
 
 # Create your views here.
 
-from main.models import Experience, Project
+
+PORTFOLIO_OWNER = "Rayna Kayla Rayvanka"
+
+EXPERIENCE_GROUPS = (
+    {
+        "key": "career",
+        "title": "Career",
+        "subtitle": "Internships & professional experiences",
+        "modifier": "career",
+    },
+    {
+        "key": "organizations",
+        "title": "Organizations",
+        "subtitle": "Leadership & communities",
+        "modifier": "organizations",
+    },
+    {
+        "key": "community",
+        "title": "Community",
+        "subtitle": "Volunteering, committees & mentoring",
+        "modifier": "community",
+    },
+    {
+        "key": "competition",
+        "title": "Competition",
+        "subtitle": "Challenges, competitions & achievements",
+        "modifier": "competitions",
+    },
+    {
+        "key": "personal-project",
+        "title": "Personal Project",
+        "subtitle": "Things I've built, explored & experimented with",
+        "modifier": "projects",
+    },
+    {
+        "key": "certification",
+        "title": "Certification",
+        "subtitle": "Courses, credentials & continuous learning",
+        "modifier": "certifications",
+    },
+)
 
 
 def show_main(request):
     context = {
-        "name": "Rayna Kayla Rayvanka",
+        "name": PORTFOLIO_OWNER,
         "npm": "2506657283",
         "study_program": "S1 Ilmu Komputer",
         "bio": (
@@ -29,12 +70,101 @@ def show_main(request):
 
 
 def show_experience(request):
+    json_response = get_experiences_json(request)
+    deserialized_experiences = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    experiences = [item.object for item in deserialized_experiences]
+
+    experiences_by_category = {
+        group["key"]: [] for group in EXPERIENCE_GROUPS
+    }
+    for experience in experiences:
+        experiences_by_category.setdefault(experience.category, []).append(
+            experience
+        )
+
+    experience_groups = [
+        {
+            **group,
+            "items": experiences_by_category[group["key"]],
+        }
+        for group in EXPERIENCE_GROUPS
+    ]
+
     context = {
-        "name": "Rayna Kayla Rayvanka",
-        "experience_list": Experience.objects.all(),
+        "name": PORTFOLIO_OWNER,
+        "experience_list": experiences,
+        "experience_groups": experience_groups,
     }
 
     return render(request, "experience.html", context)
+
+
+def create_experience(request):
+    form = ExperienceForm(request.POST if request.method == "POST" else None)
+
+    if request.method == "POST" and form.is_valid():
+        experience = form.save()
+        messages.success(
+            request,
+            f'"{experience.title}" has been added successfully.',
+        )
+        return redirect("main:show_experience")
+
+    context = {
+        "name": PORTFOLIO_OWNER,
+        "form": form,
+        "is_update": False,
+    }
+    return render(request, "experience_form.html", context)
+
+
+def update_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+    form = ExperienceForm(
+        request.POST if request.method == "POST" else None,
+        instance=experience,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        updated_experience = form.save()
+        messages.success(
+            request,
+            f'"{updated_experience.title}" has been updated successfully.',
+        )
+        return redirect("main:show_experience")
+
+    context = {
+        "name": PORTFOLIO_OWNER,
+        "form": form,
+        "experience": experience,
+        "is_update": True,
+    }
+    return render(request, "experience_form.html", context)
+
+
+@require_POST
+def delete_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+    experience_title = experience.title
+    experience.delete()
+    messages.success(
+        request,
+        f'"{experience_title}" has been deleted successfully.',
+    )
+    return redirect("main:show_experience")
+
+
+def get_experiences_json(request):
+    experiences = Experience.objects.order_by(
+        "category",
+        "-started_at",
+        "title",
+    )
+    experiences_json = serializers.serialize("json", experiences)
+    return HttpResponse(experiences_json, content_type="application/json")
 
 
 def show_projects(request):
@@ -53,7 +183,7 @@ def show_projects(request):
     title_query = request.GET.get("title", "").strip()
 
     context = {
-        "name": "Rayna Kayla Rayvanka",
+        "name": PORTFOLIO_OWNER,
         "project_list": projects,
         "title_query": title_query,
     }
@@ -75,7 +205,7 @@ def create_project(request):
         return redirect("main:show_projects")
 
     context = {
-        "name": "Rayna Kayla Rayvanka",
+        "name": PORTFOLIO_OWNER,
         "form": form,
     }
 

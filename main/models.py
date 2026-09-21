@@ -1,4 +1,5 @@
 import uuid
+from django.core.exceptions import ValidationError
 from django.db import models
 
 # Create your models here.
@@ -6,12 +7,12 @@ from django.db import models
 
 class Experience(models.Model):
     EXPERIENCE_CHOICES = [
-        ('internship', 'Internship'),
-        ('research', 'Research'),
-        ('volunteer', 'Volunteer'),
-        ('part-time', 'Part-Time'),
-        ('full-time', 'Full-Time'),
-        ('freelance', 'Freelance'),
+        ("career", "Career"),
+        ("organizations", "Organizations"),
+        ("community", "Community"),
+        ("competition", "Competition"),
+        ("personal-project", "Personal Project"),
+        ("certification", "Certification"),
     ]
 
     id = models.UUIDField(
@@ -26,7 +27,7 @@ class Experience(models.Model):
     category = models.CharField(
         max_length=20,
         choices=EXPERIENCE_CHOICES,
-        default='full-time'
+        default="career",
     )
 
     thumbnail = models.URLField(
@@ -35,7 +36,8 @@ class Experience(models.Model):
     )
 
     started_at = models.DateTimeField(
-        auto_now_add=True
+        blank=True,
+        null=True,
     )
 
     ended_at = models.DateTimeField(
@@ -45,6 +47,23 @@ class Experience(models.Model):
 
     def __str__(self):
         return self.title
+
+    def clean(self):
+        super().clean()
+
+        if (
+            self.started_at
+            and self.ended_at
+            and self.ended_at < self.started_at
+        ):
+            raise ValidationError(
+                {
+                    "ended_at": (
+                        "End date and time cannot be earlier than "
+                        "the start date and time."
+                    )
+                }
+            )
 
     @property
     def is_ongoing(self):
