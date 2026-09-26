@@ -1292,6 +1292,37 @@ img {
     border-top: 1px solid var(--line-soft);
 }
 
+/* Register */
+.register-shell {
+    max-width: 560px;
+}
+
+.register-form {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.register-form .form-group {
+    grid-column: 1;
+}
+
+.register-login-link {
+    margin-top: 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.register-login-link a {
+    color: #9d5f78;
+    font-weight: 650;
+    text-underline-offset: 0.2em;
+}
+
+.register-login-link a:focus-visible {
+    outline: 3px solid rgba(157, 95, 120, 0.28);
+    outline-offset: 3px;
+}
+
 
 /* Tutorial 3: project management */
 

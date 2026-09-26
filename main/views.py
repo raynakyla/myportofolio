@@ -7,6 +7,10 @@ from django.views.decorators.http import require_POST
 from main.forms import ExperienceForm, ProjectForm
 from main.models import Experience, Project
 
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+
 # Create your views here.
 
 
@@ -242,3 +246,48 @@ def delete_project(request, project_id):
         )
 
     return redirect("main:show_projects")
+
+# tutorial 4 (biar nyarinya gampang)
+
+def register(request):
+    form = UserCreationForm()
+
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Your account has been successfully created!"
+            )
+            return redirect("main:login")
+
+    context = {
+        "form": form
+    }
+
+    return render(request, "register.html", context)
+
+# tutorial 4
+
+def login_user(request):
+    if request.method == "POST":
+        form = AuthenticationForm(data=request.POST)
+
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+
+            response = redirect("main:show_main")
+
+            return response
+
+    else:
+        form = AuthenticationForm(request)
+
+    context = {
+        "form": form
+    }
+
+    return render(request, "login.html", context)

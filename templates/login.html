@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block meta %}
+    <title>Login - {{ name }}</title>
+{% endblock meta %}
+
+{% block content %}
+    <main>
+        <section class="project-form-section section" aria-labelledby="login-title">
+            <div class="container register-shell">
+                <header class="project-form-intro">
+                    <p class="eyebrow">Welcome back</p>
+                    <h1 id="login-title">Sign in to your account.</h1>
+                    <p>Pick up where you left off.</p>
+                </header>
+
+                <form method="post" action="{% url 'main:login' %}" class="project-form register-form glass-surface">
+                    {% csrf_token %}
+
+                    {% for error in form.non_field_errors %}
+                        <p class="form-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+
+                    {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+
+                            {% if field.help_text %}
+                                <div class="form-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div role="alert">
+                                    {% for error in field.errors %}
+                                        <p class="form-error">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="form-actions">
+                        <button type="submit" class="button button-primary">Login</button>
+                    </div>
+                </form>
+
+                <p class="register-login-link">
+                    Don't have an account?
+                    <a href="{% url 'main:register' %}">Register</a>
+                </p>
+            </div>
+        </section>
+    </main>
+{% endblock content %}

@@ -11,6 +11,8 @@ from main.views import (
     show_main,
     show_projects,
     update_experience,
+    register,
+    login_user,
 )
 
 app_name = "main"
@@ -66,4 +68,12 @@ urlpatterns = [
         delete_project,
         name="delete_project",
     ),
+    path(
+	"register/", 
+	register, 
+	name="register"
+    ),
+    path("login/", login_user, name="login"),
+
 ]
+

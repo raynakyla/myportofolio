@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block meta %}
+    <title>Register - {{ name }}</title>
+{% endblock meta %}
+
+{% block content %}
+    <main>
+        <section class="project-form-section section" aria-labelledby="register-title">
+            <div class="container register-shell">
+                <header class="project-form-intro">
+                    <p class="eyebrow">Welcome to the portfolio</p>
+                    <h1 id="register-title">Create your account.</h1>
+                    <p>A little space to get started.</p>
+                </header>
+
+                <form method="post" action="{% url 'main:register' %}" class="project-form register-form glass-surface">
+                    {% csrf_token %}
+
+                    {% for error in form.non_field_errors %}
+                        <p class="form-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+
+                    {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+
+                            {% if field.help_text %}
+                                <div class="form-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</div>
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div role="alert">
+                                    {% for error in field.errors %}
+                                        <p class="form-error">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="form-actions">
+                        <button type="submit" class="button button-primary">Register</button>
+                    </div>
+                </form>
+
+                <p class="register-login-link">
+                    Already have an account?
+                    <a href="{% url 'main:login' %}">Login</a>
+                </p>
+            </div>
+        </section>
+    </main>
+{% endblock content %}
