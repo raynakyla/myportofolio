@@ -94,6 +94,10 @@
 
                         </div>
 
+                        {% if last_login %}
+                            <p class="last-login">Last login: {{ last_login }}</p>
+                        {% endif %}
+
                     </div>
 
                     <!-- Profile image -->

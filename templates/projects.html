@@ -36,7 +36,14 @@
 
                 </header>
 
-                <div class="project-toolbar glass-surface">
+                {% if user.is_superuser %}
+                    <a
+                        href="{% url 'main:create_project' %}"
+                        class="project-toolbar project-toolbar--active glass-surface"
+                    >
+                {% else %}
+                    <div class="project-toolbar project-toolbar--owner-only glass-surface">
+                {% endif %}
                     <div class="project-toolbar__copy">
                         <span
                             class="project-toolbar__mark"
@@ -50,19 +57,28 @@
                                 Project archive
                             </p>
                             <p class="project-toolbar__description">
-                                add your new project here! :D 
+                                {% if user.is_superuser %}
+                                    add your new project here! :D
+                                {% else %}
+                                    owner's little corner for new projects
+                                {% endif %}
                             </p>
                         </div>
                     </div>
 
-                    <a
-                        href="{% url 'main:create_project' %}"
-                        class="button button-primary project-add-button"
-                    >
-                        Add project
-                        <span aria-hidden="true">&nearr;</span>
+                    {% if user.is_superuser %}
+                        <span class="button button-primary project-add-button">
+                            Add project
+                            <span aria-hidden="true">&nearr;</span>
+                        </span>
+                    {% else %}
+                        <span class="project-toolbar__status">Owner only</span>
+                    {% endif %}
+                {% if user.is_superuser %}
                     </a>
-                </div>
+                {% else %}
+                    </div>
+                {% endif %}
 
                 <!-- Search form -->
                 <form
@@ -199,7 +215,11 @@
                                         </a>
                                     {% endif %}
 
-                                    {% include "components/project_delete_modal.html" with project=project %}
+                                    {% include "components/project_star.html" with project=project %}
+
+                                    {% if user.is_superuser %}
+                                        {% include "components/project_delete_modal.html" with project=project %}
+                                    {% endif %}
 
                                 </div>
 
@@ -246,12 +266,14 @@
                                     A little space for the next idea.
                                 </p>
 
-                                <a
-                                    href="{% url 'main:create_project' %}"
-                                    class="button"
-                                >
-                                    Add First Project
-                                </a>
+                                {% if user.is_superuser %}
+                                    <a
+                                        href="{% url 'main:create_project' %}"
+                                        class="button"
+                                    >
+                                        Add First Project
+                                    </a>
+                                {% endif %}
 
                             {% endif %}
 

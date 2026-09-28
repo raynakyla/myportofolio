@@ -1,3 +1,10 @@
+import json
+import uuid
+from datetime import timedelta
+from unittest.mock import patch
+
+from django.core import serializers
+from django.http import HttpResponse
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -15,7 +22,7 @@ class MainTest(TestCase):
                 "Supported IT infrastructure presales through product research, "
                 "BOQ preparation, requirement analysis, and technical solution support."
             ),
-            category="internship",
+            category="career",
         )
 
     def test_main_url_is_accessible(self):
@@ -47,7 +54,7 @@ class MainTest(TestCase):
 
         self.assertEqual(
             self.experience.category,
-            "internship"
+            "career"
         )
 
         self.assertTrue(
@@ -78,7 +85,7 @@ class MainTest(TestCase):
 
         self.assertContains(
             response,
-            "Internship"
+            "Career"
         )
 
         self.assertContains(
@@ -258,3 +265,230 @@ class ProjectTest(TestCase):
                 for target in routes:
                     self.assertContains(response, f'href="{reverse(target)}"')
                 self.assertContains(response, "Fakultas Ilmu Komputer, Universitas Indonesia.")
+
+
+class ExperienceManagementTest(TestCase):
+    def setUp(self):
+        self.experience = Experience.objects.create(
+            title="Head of Event Division - DDP0 2026",
+            description="Led the event division and coordinated its programs.",
+            category="community",
+            thumbnail="",
+            started_at=timezone.now().replace(second=0, microsecond=0),
+        )
+
+    def experience_payload(self, **overrides):
+        payload = {
+            "title": "BEM Fasilkom UI",
+            "description": "Contributed to creative student programs.",
+            "category": "organizations",
+            "thumbnail": "",
+            "started_at": self.experience.started_at.strftime("%Y-%m-%dT%H:%M"),
+            "ended_at": "",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_experience_page_and_form_are_accessible(self):
+        page_response = self.client.get(reverse("main:show_experience"))
+        form_response = self.client.get(reverse("main:create_experience"))
+
+        self.assertEqual(page_response.status_code, 200)
+        self.assertTemplateUsed(page_response, "experience.html")
+        self.assertEqual(form_response.status_code, 200)
+        self.assertTemplateUsed(form_response, "experience_form.html")
+        self.assertContains(form_response, "csrfmiddlewaretoken")
+
+        for field_name in [
+            "title",
+            "description",
+            "category",
+            "thumbnail",
+            "ended_at",
+        ]:
+            self.assertContains(form_response, f'name="{field_name}"')
+
+    def test_create_experience_with_valid_form(self):
+        response = self.client.post(
+            reverse("main:create_experience"),
+            self.experience_payload(),
+        )
+
+        self.assertRedirects(response, reverse("main:show_experience"))
+        created = Experience.objects.get(title="BEM Fasilkom UI")
+        self.assertEqual(created.category, "organizations")
+
+    def test_create_experience_rejects_invalid_form_and_keeps_input(self):
+        response = self.client.post(
+            reverse("main:create_experience"),
+            self.experience_payload(
+                title="",
+                description="Keep this description in the form.",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response.context["form"],
+            "title",
+            "This field is required.",
+        )
+        self.assertContains(response, "Keep this description in the form.")
+        self.assertFalse(
+            Experience.objects.filter(
+                description="Keep this description in the form."
+            ).exists()
+        )
+
+    def test_update_form_is_prefilled(self):
+        response = self.client.get(
+            reverse(
+                "main:update_experience",
+                args=[self.experience.id],
+            )
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["form"].instance, self.experience)
+        self.assertContains(response, self.experience.title)
+        self.assertContains(response, self.experience.description)
+
+    def test_update_changes_same_object_without_adding_another(self):
+        original_id = self.experience.id
+        original_count = Experience.objects.count()
+        response = self.client.post(
+            reverse(
+                "main:update_experience",
+                args=[self.experience.id],
+            ),
+            self.experience_payload(
+                title="Updated Event Lead",
+                category="competition",
+            ),
+        )
+
+        self.assertRedirects(response, reverse("main:show_experience"))
+        self.assertEqual(Experience.objects.count(), original_count)
+        updated = Experience.objects.get(pk=original_id)
+        self.assertEqual(updated.title, "Updated Event Lead")
+        self.assertEqual(updated.category, "competition")
+
+    def test_invalid_update_does_not_change_saved_data(self):
+        original_title = self.experience.title
+        response = self.client.post(
+            reverse(
+                "main:update_experience",
+                args=[self.experience.id],
+            ),
+            self.experience_payload(title=""),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.experience.refresh_from_db()
+        self.assertEqual(self.experience.title, original_title)
+        self.assertEqual(Experience.objects.count(), 1)
+
+    def test_end_date_cannot_precede_start_date(self):
+        invalid_end = self.experience.started_at - timedelta(days=1)
+        response = self.client.post(
+            reverse(
+                "main:update_experience",
+                args=[self.experience.id],
+            ),
+            self.experience_payload(
+                title=self.experience.title,
+                ended_at=invalid_end.strftime("%Y-%m-%dT%H:%M"),
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response.context["form"],
+            "ended_at",
+            "End date and time cannot be earlier than the start date and time.",
+        )
+        self.experience.refresh_from_db()
+        self.assertIsNone(self.experience.ended_at)
+
+    def test_delete_requires_post_and_post_deletes(self):
+        delete_url = reverse(
+            "main:delete_experience",
+            args=[self.experience.id],
+        )
+
+        get_response = self.client.get(delete_url)
+        self.assertEqual(get_response.status_code, 405)
+        self.assertTrue(Experience.objects.filter(pk=self.experience.id).exists())
+
+        post_response = self.client.post(delete_url)
+        self.assertRedirects(post_response, reverse("main:show_experience"))
+        self.assertFalse(Experience.objects.filter(pk=self.experience.id).exists())
+
+    def test_missing_experience_ids_return_404(self):
+        missing_id = uuid.uuid4()
+
+        update_response = self.client.get(
+            reverse("main:update_experience", args=[missing_id])
+        )
+        delete_response = self.client.post(
+            reverse("main:delete_experience", args=[missing_id])
+        )
+
+        self.assertEqual(update_response.status_code, 404)
+        self.assertEqual(delete_response.status_code, 404)
+
+    def test_experience_json_endpoint_is_valid(self):
+        response = self.client.get(reverse("main:get_experiences_json"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/json")
+        payload = json.loads(response.content)
+        self.assertEqual(len(payload), 1)
+        self.assertEqual(payload[0]["pk"], str(self.experience.id))
+        self.assertEqual(
+            payload[0]["fields"]["title"],
+            self.experience.title,
+        )
+
+    def test_experience_page_displays_deserialized_json_data(self):
+        serialized = serializers.serialize("json", [self.experience])
+        self.experience.delete()
+
+        with patch("main.views.get_experiences_json") as json_view:
+            json_view.return_value = HttpResponse(
+                serialized,
+                content_type="application/json",
+            )
+            response = self.client.get(reverse("main:show_experience"))
+
+        self.assertContains(response, "Head of Event Division - DDP0 2026")
+        self.assertEqual(
+            response.context["experience_list"][0].title,
+            "Head of Event Division - DDP0 2026",
+        )
+
+    def test_empty_experience_page_and_category_structure(self):
+        Experience.objects.all().delete()
+        response = self.client.get(reverse("main:show_experience"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Belum ada pengalaman yang ditambahkan.")
+        for category_title in [
+            "Career",
+            "Organizations",
+            "Community",
+            "Competition",
+            "Personal Project",
+            "Certification",
+        ]:
+            self.assertContains(response, category_title)
+
+    def test_profile_and_projects_still_work(self):
+        for route_name, template_name in [
+            ("main:show_main", "main.html"),
+            ("main:show_projects", "projects.html"),
+        ]:
+            with self.subTest(route_name=route_name):
+                response = self.client.get(reverse(route_name))
+                self.assertEqual(response.status_code, 200)
+                self.assertTemplateUsed(response, template_name)

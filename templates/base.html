@@ -25,15 +25,25 @@
             <a
                 href="{% url 'main:show_main' %}"
                 class="brand"
-                aria-label="{{ name }}, back to profile"
+                aria-label="Back to profile"
             >
-                {{ name }}
+                {% block brand_text %}{{ name }}{% endblock brand_text %}
             </a>
 
             <nav aria-label="Primary navigation">
                 <a href="{% url 'main:show_main' %}">Profile</a>
                 <a href="{% url 'main:show_experience' %}">Experience</a>
                 <a href="{% url 'main:show_projects' %}">Projects</a>
+                {% if user.is_authenticated %}
+                    <span class="nav-username" title="{{ user.username }}">
+                        <span class="nav-username__mark" aria-hidden="true">{{ user.username|first|upper }}</span>
+                        <span class="nav-username__text">{{ user.username }}</span>
+                    </span>
+                    <a href="{% url 'main:logout' %}">Logout</a>
+                {% else %}
+                    <a href="{% url 'main:login' %}">Login</a>
+                    <a href="{% url 'main:register' %}">Register</a>
+                {% endif %}
             </nav>
         </div>
     </header>
@@ -57,7 +67,7 @@
     <footer class="site-footer">
         <div class="container">
             <p>
-                &copy; 2026 {{ name }}.
+                &copy; 2026 {{ name|default:"Rayna Kayla Rayvanka" }}.
                 Fakultas Ilmu Komputer, Universitas Indonesia.
             </p>
         </div>

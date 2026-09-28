@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block meta %}
+    <meta
+        name="description"
+        content="{% if is_update %}Edit{% else %}Add{% endif %} an experience in {{ name }}'s portfolio."
+    >
+    <title>
+        {% if is_update %}Edit Experience{% else %}Add Experience{% endif %}
+        - {{ name }}
+    </title>
+{% endblock meta %}
+
+{% block content %}
+    <main>
+        <section
+            class="project-form-section section"
+            aria-labelledby="experience-form-title"
+        >
+            <div class="container project-form-shell">
+                <a
+                    href="{% url 'main:show_experience' %}"
+                    class="project-form-back"
+                >
+                    <span aria-hidden="true">&larr;</span>
+                    Back to experiences
+                </a>
+
+                <header class="project-form-intro">
+                    <p class="eyebrow">
+                        {% if is_update %}Refine a chapter{% else %}New chapter{% endif %}
+                    </p>
+                    <h1 id="experience-form-title">
+                        {% if is_update %}
+                            Edit this experience.
+                        {% else %}
+                            Add a new experience.
+                        {% endif %}
+                    </h1>
+                    <p>
+                        Capture the work, community, or milestone that made
+                        this chapter worth remembering.
+                    </p>
+                </header>
+
+                <form method="post" class="project-form experience-form glass-surface">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+
+                            {{ field }}
+
+                            {% if field.help_text %}
+                                <p class="form-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div id="{{ field.auto_id }}_error" role="alert">
+                                    {% for error in field.errors %}
+                                        <p class="form-error">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    {% for error in form.non_field_errors %}
+                        <p class="form-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+
+                    <div class="form-actions">
+                        <button type="submit" class="button button-primary">
+                            {% if is_update %}
+                                Save Changes
+                            {% else %}
+                                <span aria-hidden="true">&plus;</span>
+                                Add Experience
+                            {% endif %}
+                        </button>
+
+                        <a
+                            href="{% url 'main:show_experience' %}"
+                            class="button button-quiet"
+                        >
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+{% endblock content %}

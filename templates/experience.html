@@ -3,126 +3,172 @@
 {% block meta %}
     <meta
         name="description"
-        content="Experience portfolio of Rayna Kayla Rayvanka, a Computer Science student at Universitas Indonesia."
+        content="Experience portfolio of {{ name }}, a Computer Science student at Universitas Indonesia."
     >
-
     <title>Experience - {{ name }}</title>
 {% endblock meta %}
 
 {% block content %}
     <main>
-
         <section
             class="experience-section section"
             id="experience"
             aria-labelledby="experience-title"
         >
-
             <div class="container">
-
-                <!-- Judul section -->
                 <header class="section-intro">
-
-                    <p class="eyebrow">
-                        02 &mdash; Experience
-                    </p>
-
-                    <h1 id="experience-title">
-                        things i&rsquo;ve been part of.
-                    </h1>
-
+                    <p class="eyebrow">02 &mdash; Experience</p>
+                    <h1 id="experience-title">things i&rsquo;ve been part of.</h1>
                     <p>
                         A collection of experiences that shaped how I build,
                         lead, and collaborate.
                     </p>
-
                 </header>
 
-                <!-- Grid -->
-                <div class="experience-grid">
-
-                    {% for experience in experience_list %}
-
-                        <article
-                            class="experience-card"
-                            tabindex="0"
-                            aria-labelledby="experience-{{ experience.id }}"
+                <div class="project-toolbar glass-surface experience-toolbar">
+                    <div class="project-toolbar__copy">
+                        <span
+                            class="project-toolbar__mark"
+                            aria-hidden="true"
                         >
+                            &plus;
+                        </span>
+                        <div>
+                            <p class="project-toolbar__label">
+                                Experience archive
+                            </p>
+                            <p class="project-toolbar__description">
+                                Keep every meaningful chapter in one place.
+                            </p>
+                        </div>
+                    </div>
 
-                            <!-- Header card -->
+                    <a
+                        href="{% url 'main:create_experience' %}"
+                        class="button button-primary project-add-button"
+                    >
+                        Add Experience
+                        <span aria-hidden="true">&nearr;</span>
+                    </a>
+                </div>
+
+                {% if not experience_list %}
+                    <div class="experience-empty-state glass-surface">
+                        <span aria-hidden="true">&plus;</span>
+                        <div>
+                            <h2>No experiences have been added yet.</h2>
+                            <p>Belum ada pengalaman yang ditambahkan.</p>
+                        </div>
+                        <a
+                            href="{% url 'main:create_experience' %}"
+                            class="button"
+                        >
+                            Add First Experience
+                        </a>
+                    </div>
+                {% endif %}
+
+                <div class="experience-grid">
+                    {% for group in experience_groups %}
+                        <article
+                            class="experience-card experience-card--{{ group.modifier }}"
+                            tabindex="0"
+                            aria-labelledby="experience-category-{{ group.key }}"
+                        >
                             <header class="category-header">
-
                                 <div class="category-meta">
-
                                     <span>
-                                        {{ forloop.counter }}
+                                        {{ forloop.counter|stringformat:"02d" }} / 06
                                     </span>
-
                                     <span
                                         class="category-mark"
                                         aria-hidden="true"
                                     >
                                         +
                                     </span>
-
                                 </div>
 
                                 <div class="category-heading">
-
-                                    <h3 id="experience-{{ experience.id }}">
-                                        {{ experience.title }}
-                                    </h3>
-
-                                    <p>
-                                        {{ experience.get_category_display }}
-                                    </p>
-
+                                    <h2 id="experience-category-{{ group.key }}">
+                                        {{ group.title }}
+                                    </h2>
+                                    <p>{{ group.subtitle }}</p>
                                 </div>
-
                             </header>
 
-                            <!-- Content -->
                             <div class="experience-list-wrap">
-
                                 <ul class="experience-list">
+                                    {% for experience in group.items %}
+                                        <li class="experience-item">
+                                            {% if experience.thumbnail %}
+                                                <img
+                                                    src="{{ experience.thumbnail }}"
+                                                    alt="Preview of {{ experience.title }}"
+                                                    class="experience-thumbnail"
+                                                    loading="lazy"
+                                                    width="480"
+                                                    height="270"
+                                                >
+                                            {% endif %}
 
-                                    <li class="experience-item">
+                                            <div class="experience-item-heading">
+                                                <h3>{{ experience.title }}</h3>
+                                                <span class="experience-period">
+                                                    {% if experience.started_at %}
+                                                        {{ experience.started_at|date:"M Y" }}
+                                                    {% else %}
+                                                        Start date not specified
+                                                    {% endif %}
+                                                </span>
+                                            </div>
 
-                                        <p class="experience-description">
-                                            {{ experience.description }}
-                                        </p>
-
-                                        {% if experience.is_ongoing %}
-                                            <p class="experience-status">
-                                                on-going
+                                            <p class="experience-description">
+                                                {{ experience.description }}
                                             </p>
-                                        {% else %}
+
                                             <p class="experience-status">
-                                                finished
+                                                {% if experience.is_ongoing %}
+                                                    on-going
+                                                {% else %}
+                                                    finished {{ experience.ended_at|date:"M Y" }}
+                                                {% endif %}
                                             </p>
-                                        {% endif %}
 
-                                    </li>
+                                            <div class="experience-actions">
+                                                <a
+                                                    href="{% url 'main:update_experience' experience.id %}"
+                                                    class="button button-secondary"
+                                                    aria-label="Edit {{ experience.title }}"
+                                                >
+                                                    Edit
+                                                </a>
 
+                                                <button
+                                                    type="button"
+                                                    class="button button-danger-outline"
+                                                    popovertarget="delete-experience-{{ experience.id }}"
+                                                    aria-label="Delete {{ experience.title }}"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </li>
+                                    {% empty %}
+                                        <li class="experience-category-empty">
+                                            No entries in this category yet.
+                                        </li>
+                                    {% endfor %}
                                 </ul>
-
                             </div>
-
                         </article>
-
-                    {% empty %}
-
-                        <p class="empty-state">
-                            Belum ada pengalaman yang ditambahkan.
-                        </p>
-
                     {% endfor %}
-
                 </div>
 
+                {# Keep popovers outside the card's hover-controlled visibility. #}
+                {% for experience in experience_list %}
+                    {% include "components/experience_delete_modal.html" with experience=experience %}
+                {% endfor %}
             </div>
-
         </section>
-
     </main>
 {% endblock content %}
