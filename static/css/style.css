@@ -15,7 +15,7 @@
     --text-secondary: #746c70;
     --glass-fill: rgba(255, 247, 251, 0.66);
     --glass-fill-strong: rgba(255, 242, 248, 0.82);
-    --glass-border: rgba(255, 255, 255, 0.82);
+    --glass-border: transparent;
     --line-soft: rgba(77, 64, 70, 0.11);
     --shadow-soft: 0 24px 70px rgba(137, 83, 108, 0.14);
     --shadow-hover: 0 28px 80px rgba(137, 83, 108, 0.2);
@@ -143,7 +143,7 @@ img {
     padding: 0.75rem 1.25rem;
     border-radius: var(--radius-medium);
     background: rgba(255, 240, 247, 0.72);
-    box-shadow: 0 16px 42px rgba(130, 78, 102, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    box-shadow: 0 16px 42px rgba(130, 78, 102, 0.15);
 }
 
 .brand {
@@ -163,15 +163,50 @@ img {
 .site-header nav {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 0.35rem;
     margin-left: 1rem;
+}
+
+.nav-username {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 12rem;
+    padding: 0.3rem 0.8rem 0.3rem 0.3rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(251, 232, 166, 0.8), rgba(246, 206, 221, 0.9));
+    box-shadow: 0 6px 18px rgba(137, 83, 108, 0.12);
+    color: #75445d;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.nav-username__mark {
+    display: grid;
+    flex: 0 0 auto;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.55);
+    color: #75445d;
+    font-size: 0.72rem;
+    place-items: center;
+}
+
+.nav-username__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .site-header nav a {
     position: relative;
     padding: 0.5rem 0.8rem;
     border-radius: 10px;
-    color: #9d5f78;;
+    color: #9d5f78;
     font-size: 0.88rem;
     font-weight: 550;
     text-decoration: none;
@@ -331,16 +366,22 @@ img {
     margin-top: 1.75rem;
 }
 
+.last-login {
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
 .social-link {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 42px;
     padding: 0.55rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.92);
+    border: 1px solid transparent;
     border-radius: var(--radius-small);
     background: var(--button-glass);
-    box-shadow: 0 10px 24px rgba(126, 78, 100, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(117, 78, 96, 0.08);
+    box-shadow: 0 10px 24px rgba(126, 78, 100, 0.12);
     -webkit-backdrop-filter: blur(16px) saturate(135%);
     backdrop-filter: blur(16px) saturate(135%);
     color: var(--text-primary);
@@ -365,7 +406,7 @@ img {
 .social-link:hover {
     border-color: rgba(70, 61, 65, 0.18);
     background: var(--button-glass-hover);
-    box-shadow: 0 14px 30px rgba(126, 78, 100, 0.18), inset 0 1px 0 #fff;
+    box-shadow: 0 14px 30px rgba(126, 78, 100, 0.18);
     transform: translateY(-2px);
 }
 
@@ -377,7 +418,7 @@ img {
 .photo-frame {
     position: relative;
     padding: 0.65rem;
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border: 1px solid transparent;
     border-radius: 30px;
     background: linear-gradient(145deg, rgba(246, 206, 221, 0.72), rgba(251, 232, 166, 0.58));
     box-shadow: 0 22px 55px rgba(98, 74, 86, 0.16);
@@ -454,9 +495,9 @@ img {
     min-height: 420px;
     overflow: hidden;
     padding: 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.86);
+    border: 1px solid transparent;
     border-radius: 24px;
-    box-shadow: 0 18px 48px rgba(113, 75, 93, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    box-shadow: 0 18px 48px rgba(113, 75, 93, 0.12);
     -webkit-backdrop-filter: blur(20px) saturate(125%);
     backdrop-filter: blur(20px) saturate(125%);
     flex-direction: column;
@@ -510,10 +551,10 @@ img {
     display: grid;
     width: 34px;
     height: 34px;
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border: 1px solid transparent;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.34);
-    box-shadow: 0 7px 18px rgba(103, 70, 85, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    box-shadow: 0 7px 18px rgba(103, 70, 85, 0.1);
     place-items: center;
     transition: background-color 300ms ease, transform 300ms ease;
 }
@@ -611,7 +652,7 @@ img {
     height: auto;
     aspect-ratio: 16 / 9;
     margin-bottom: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.82);
+    border: 1px solid transparent;
     border-radius: var(--radius-small);
     object-fit: cover;
 }
@@ -620,7 +661,7 @@ img {
     display: inline-flex;
     margin-top: 0.75rem;
     padding: 0.3rem 0.65rem;
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    border: 1px solid transparent;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.42);
     color: #715b67;
@@ -665,7 +706,7 @@ img {
     flex: 0 0 auto;
     width: 2.75rem;
     height: 2.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.92);
+    border: 1px solid transparent;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.54);
     color: #9d5f78;
@@ -694,8 +735,8 @@ img {
 }
 
 .experience-card:focus-within {
-    border-color: rgba(255, 255, 255, 1);
-    box-shadow: 0 24px 60px rgba(122, 75, 98, 0.18), inset 0 1px 0 #fff;
+    border-color: transparent;
+    box-shadow: 0 24px 60px rgba(122, 75, 98, 0.18);
     transform: translateY(-3px);
 }
 
@@ -718,8 +759,8 @@ img {
 
 @media (hover: hover) and (pointer: fine) {
     .experience-card:hover {
-        border-color: rgba(255, 255, 255, 1);
-        box-shadow: 0 24px 60px rgba(122, 75, 98, 0.18), inset 0 1px 0 #fff;
+        border-color: transparent;
+        box-shadow: 0 24px 60px rgba(122, 75, 98, 0.18);
         transform: translateY(-3px);
     }
 
@@ -1058,6 +1099,11 @@ img {
         text-align: center;
     }
 
+    .nav-username {
+        max-width: min(100%, 12rem);
+        margin-inline: auto;
+    }
+
     .profile-card {
         border-radius: 25px;
     }
@@ -1216,10 +1262,10 @@ img {
     width: 100%;
     min-height: 3.25rem;
     padding: 0.8rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.88);
+    border: 1px solid transparent;
     border-radius: var(--radius-small);
     background: rgba(255, 255, 255, 0.52);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    box-shadow: none;
     color: var(--text-primary);
     font: inherit;
     -webkit-backdrop-filter: blur(14px);
@@ -1323,6 +1369,114 @@ img {
     outline-offset: 3px;
 }
 
+.auth-section {
+    padding: clamp(2.75rem, 4.5vh, 3.25rem) 0;
+}
+
+.auth-section .register-shell {
+    max-width: 480px;
+}
+
+.auth-section .eyebrow {
+    margin-bottom: 0.4rem;
+}
+
+.auth-section .project-form-intro h1 {
+    font-size: clamp(2rem, 4vw, 2.55rem);
+    line-height: 1.08;
+}
+
+.auth-section .project-form-intro > p:last-child {
+    margin-top: 0.45rem;
+    font-size: 0.92rem;
+}
+
+.auth-login-hint {
+    display: block;
+    margin-top: 0.6rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.auth-login-hint strong {
+    color: #9d5f78;
+    font-weight: 650;
+}
+
+.auth-section .register-form {
+    gap: 0.7rem;
+    margin-top: 1rem;
+    padding: 1.15rem;
+}
+
+.auth-section .form-group label {
+    margin-bottom: 0.35rem;
+}
+
+.auth-section .form-group input:not([type="checkbox"]) {
+    min-height: 2.55rem;
+    padding: 0.55rem 0.85rem;
+}
+
+.auth-section .form-help {
+    font-size: 0.76rem;
+    line-height: 1.4;
+}
+
+.auth-section details.form-help summary {
+    color: #9d5f78;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.auth-section details.form-help ul {
+    padding-left: 1.1rem;
+}
+
+.auth-section .form-actions {
+    margin-top: 0;
+    padding-top: 0.85rem;
+}
+
+.auth-section .register-login-link {
+    margin-top: 0.8rem;
+}
+
+body:has(.auth-section) .site-footer {
+    padding: 0.5rem 0 0.75rem;
+    font-size: 0.72rem;
+}
+
+body:has(.auth-section) .site-footer .container {
+    padding-top: 0.5rem;
+}
+
+@media (max-height: 700px) {
+    body:has(.auth-section) .site-footer {
+        display: none;
+    }
+}
+
+@media (min-width: 520px) and (max-height: 700px) {
+    .auth-section--register .register-form {
+        gap: 0.45rem;
+        padding: 0.9rem;
+    }
+
+    .auth-section--register .form-group label {
+        margin-bottom: 0.25rem;
+    }
+
+    .auth-section--register .form-group input:not([type="checkbox"]) {
+        min-height: 2.3rem;
+        padding-block: 0.4rem;
+    }
+
+    .auth-section--register .form-actions {
+        padding-top: 0.6rem;
+    }
+}
+
 
 /* Tutorial 3: project management */
 
@@ -1354,10 +1508,10 @@ img {
     flex: 0 0 auto;
     width: 2.75rem;
     height: 2.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.92);
+    border: 1px solid transparent;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.54);
-    box-shadow: inset 0 1px 0 #fff, 0 8px 24px rgba(137, 83, 108, 0.1);
+    box-shadow: 0 8px 24px rgba(137, 83, 108, 0.1);
     color: #9d5f78;
     font-size: 1.25rem;
     place-items: center;
@@ -1401,7 +1555,7 @@ img {
     width: 100%;
     min-width: 0;
     padding: 0.8rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.75);
+    border: 1px solid transparent;
     border-radius: var(--radius-small);
     background: rgba(255, 255, 255, 0.58);
     color: var(--text-primary);
@@ -1436,12 +1590,11 @@ img {
     gap: 0.55rem;
     min-height: 2.75rem;
     padding: 0.68rem 1.05rem;
-    border: 1px solid rgba(255, 255, 255, 0.92);
+    border: 1px solid transparent;
     border-radius: var(--radius-small);
     background: rgba(255, 255, 255, 0.5);
     box-shadow:
-        0 10px 26px rgba(126, 78, 100, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.96);
+        0 10px 26px rgba(126, 78, 100, 0.1);
     color: var(--text-primary);
     cursor: pointer;
     font: inherit;
@@ -1459,11 +1612,10 @@ img {
 
 .button:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 1);
+    border-color: transparent;
     background: rgba(255, 255, 255, 0.72);
     box-shadow:
-        0 14px 30px rgba(126, 78, 100, 0.16),
-        inset 0 1px 0 #fff;
+        0 14px 30px rgba(126, 78, 100, 0.16);
 }
 
 .button:focus-visible {
@@ -1472,7 +1624,7 @@ img {
 }
 
 .button-primary {
-    border-color: rgba(255, 255, 255, 0.94);
+    border-color: transparent;
     background: linear-gradient(
         135deg,
         rgba(246, 206, 221, 0.68),
@@ -1566,7 +1718,7 @@ img {
     z-index: 1;
     width: min(100%, 30rem);
     padding: 1.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.7);
+    border: 1px solid transparent;
     border-radius: var(--radius-medium);
     background:
         linear-gradient(

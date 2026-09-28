@@ -11,6 +11,8 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 
+from datetime import datetime
+
 # Create your views here.
 
 
@@ -68,6 +70,7 @@ def show_main(request):
                                         "— usually all at the same time."
 
         ),
+	"last_login": request.COOKIES.get("last_login"),
     }
 
     return render(request, "main.html", context)
@@ -281,6 +284,11 @@ def login_user(request):
 
             response = redirect("main:show_main")
 
+            response.set_cookie(
+                "last_login",
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
+
             return response
 
     else:
@@ -291,3 +299,10 @@ def login_user(request):
     }
 
     return render(request, "login.html", context)
+def logout_user(request):
+    logout(request)
+
+    response = redirect("main:show_main")
+    response.delete_cookie("last_login")
+
+    return response

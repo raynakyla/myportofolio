@@ -13,6 +13,7 @@ from main.views import (
     update_experience,
     register,
     login_user,
+    logout_user,
 )
 
 app_name = "main"
@@ -74,6 +75,8 @@ urlpatterns = [
 	name="register"
     ),
     path("login/", login_user, name="login"),
+
+    path("logout/", logout_user, name="logout"),
 
 ]
 
