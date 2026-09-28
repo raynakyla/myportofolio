@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.core import serializers
+from django.db.models import BooleanField, Count, Exists, OuterRef, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -16,7 +17,7 @@ from datetime import datetime
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
-
+from django.contrib.auth.models import Group, User
 
 
 # Create your views here.
@@ -83,12 +84,21 @@ def show_main(request):
 
 
 def show_experience(request):
-    json_response = get_experiences_json(request)
-    deserialized_experiences = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
+    experiences_query = Experience.objects.order_by(
+        "category", "-started_at", "title"
+    ).annotate(
+        star_count=Count("starred_by", distinct=True),
     )
-    experiences = [item.object for item in deserialized_experiences]
+    if request.user.is_authenticated:
+        stars = Experience.starred_by.through.objects.filter(
+            experience_id=OuterRef("pk"), user_id=request.user.pk
+        )
+        experiences_query = experiences_query.annotate(is_starred=Exists(stars))
+    else:
+        experiences_query = experiences_query.annotate(
+            is_starred=Value(False, output_field=BooleanField())
+        )
+    experiences = list(experiences_query)
 
     experiences_by_category = {
         group["key"]: [] for group in EXPERIENCE_GROUPS
@@ -110,12 +120,19 @@ def show_experience(request):
         "name": PORTFOLIO_OWNER,
         "experience_list": experiences,
         "experience_groups": experience_groups,
+        "can_edit_experience": request.user.is_authenticated and (
+            request.user.is_superuser or is_editor(request.user)
+        ),
     }
 
     return render(request, "experience.html", context)
 
 
+@login_required(login_url="/login/")
 def create_experience(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     form = ExperienceForm(request.POST if request.method == "POST" else None)
 
     if request.method == "POST" and form.is_valid():
@@ -133,8 +150,11 @@ def create_experience(request):
     }
     return render(request, "experience_form.html", context)
 
-
+@login_required(login_url="/login/")
 def update_experience(request, experience_id):
+    if not (request.user.is_superuser or is_editor(request.user)):
+        raise PermissionDenied
+
     experience = get_object_or_404(Experience, pk=experience_id)
     form = ExperienceForm(
         request.POST if request.method == "POST" else None,
@@ -158,8 +178,12 @@ def update_experience(request, experience_id):
     return render(request, "experience_form.html", context)
 
 
+@login_required(login_url="/login/")
 @require_POST
 def delete_experience(request, experience_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
     experience = get_object_or_404(Experience, pk=experience_id)
     experience_title = experience.title
     experience.delete()
@@ -176,8 +200,26 @@ def get_experiences_json(request):
         "-started_at",
         "title",
     )
-    experiences_json = serializers.serialize("json", experiences, use_natural_foreign_keys=True)
+    experiences_json = serializers.serialize(
+        "json",
+        experiences,
+        fields=(
+            "title", "description", "category", "thumbnail", "started_at", "ended_at"
+        ),
+        use_natural_foreign_keys=True,
+    )
     return HttpResponse(experiences_json, content_type="application/json")
+
+
+@login_required(login_url="/login/")
+@require_POST
+def toggle_experience_star(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+    if experience.starred_by.filter(pk=request.user.pk).exists():
+        experience.starred_by.remove(request.user)
+    else:
+        experience.starred_by.add(request.user)
+    return redirect("main:show_experience")
 
 
 def show_projects(request):
@@ -334,3 +376,7 @@ def toggle_star(request, project_id):
             project.starred_by.add(request.user)
 
     return redirect("main:show_projects")
+
+# tugas 4
+def is_editor(user):
+    return user.groups.filter(name="Editor").exists()

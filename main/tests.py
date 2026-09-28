@@ -1,10 +1,6 @@
 import json
 import uuid
 from datetime import timedelta
-from unittest.mock import patch
-
-from django.core import serializers
-from django.http import HttpResponse
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -12,7 +8,7 @@ from django.utils import timezone
 # Create your tests here.
 
 from main.models import Experience, Project
-
+from django.contrib.auth.models import User
 
 class MainTest(TestCase):
     def setUp(self):
@@ -23,6 +19,12 @@ class MainTest(TestCase):
                 "BOQ preparation, requirement analysis, and technical solution support."
             ),
             category="career",
+        )
+
+        self.superuser = User.objects.create_superuser(
+            username="cheycherry",
+            email="convigure@gmail.com",
+            password="fortesting"
         )
 
     def test_main_url_is_accessible(self):
@@ -143,6 +145,12 @@ class ProjectTest(TestCase):
             skills="UX Design, Prototyping",
         )
 
+        self.superuser = User.objects.create_superuser(
+            username="cheycherry",
+            email="convigure@gmail.com",
+            password="fortesting"
+        )
+
     def test_projects_url_and_template(self):
         self.assertEqual(reverse("main:show_projects"), "/projects/")
         response = self.client.get(reverse("main:show_projects"))
@@ -151,6 +159,7 @@ class ProjectTest(TestCase):
         self.assertEqual(list(response.context["project_list"]), [self.project])
 
     def test_create_project_form_is_accessible(self):
+        self.client.force_login(self.superuser)
         response = self.client.get(reverse("main:create_project"))
 
         self.assertEqual(response.status_code, 200)
@@ -168,6 +177,8 @@ class ProjectTest(TestCase):
             self.assertContains(response, f'name="{field_name}"')
 
     def test_create_project_with_valid_form(self):
+        self.client.force_login(self.superuser)
+
         response = self.client.post(
             reverse("main:create_project"),
             {
@@ -185,6 +196,8 @@ class ProjectTest(TestCase):
         self.assertTrue(Project.objects.filter(title="Tutorial 3 project").exists())
 
     def test_create_project_rejects_invalid_form(self):
+        self.client.force_login(self.superuser)
+
         response = self.client.post(
             reverse("main:create_project"),
             {
@@ -276,6 +289,14 @@ class ExperienceManagementTest(TestCase):
             thumbnail="",
             started_at=timezone.now().replace(second=0, microsecond=0),
         )
+
+        self.superuser = User.objects.create_superuser(
+            username="experience_admin",
+            email="experienceadmin@example.com",
+            password="testpass123",
+        )
+
+        self.client.force_login(self.superuser)
 
     def experience_payload(self, **overrides):
         payload = {
@@ -450,21 +471,16 @@ class ExperienceManagementTest(TestCase):
             self.experience.title,
         )
 
-    def test_experience_page_displays_deserialized_json_data(self):
-        serialized = serializers.serialize("json", [self.experience])
-        self.experience.delete()
-
-        with patch("main.views.get_experiences_json") as json_view:
-            json_view.return_value = HttpResponse(
-                serialized,
-                content_type="application/json",
-            )
-            response = self.client.get(reverse("main:show_experience"))
-
+    def test_experience_page_displays_saved_data_and_json_still_works(self):
+        response = self.client.get(reverse("main:show_experience"))
         self.assertContains(response, "Head of Event Division - DDP0 2026")
         self.assertEqual(
             response.context["experience_list"][0].title,
             "Head of Event Division - DDP0 2026",
+        )
+        json_response = self.client.get(reverse("main:get_experiences_json"))
+        self.assertEqual(
+            json_response.json()[0]["fields"]["title"], self.experience.title
         )
 
     def test_empty_experience_page_and_category_structure(self):
@@ -492,3 +508,29 @@ class ExperienceManagementTest(TestCase):
                 response = self.client.get(reverse(route_name))
                 self.assertEqual(response.status_code, 200)
                 self.assertTemplateUsed(response, template_name)
+
+    ''' def test_anonymous_cannot_create_experience(self):
+        response = self.client.get(reverse("main:create_experience"))
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_regular_user_cannot_create_experience(self):
+        self.client.force_login(self.regular_user)
+
+        response = self.client.get(reverse("main:create_experience"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_editor_cannot_create_experience(self):
+        self.client.force_login(self.editor_user)
+
+        response = self.client.get(reverse("main:create_experience"))
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_can_create_experience(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.get(reverse("main:create_experience"))
+
+        self.assertEqual(response.status_code, 200) '''
