@@ -43,13 +43,17 @@
                         </div>
                     </div>
 
-                    <a
-                        href="{% url 'main:create_experience' %}"
-                        class="button button-primary project-add-button"
-                    >
-                        Add Experience
-                        <span aria-hidden="true">&nearr;</span>
-                    </a>
+                    {% if user.is_superuser %}
+                        <a
+                            href="{% url 'main:create_experience' %}"
+                            class="button button-primary project-add-button"
+                        >
+                            Add Experience
+                            <span aria-hidden="true">&nearr;</span>
+                        </a>
+                    {% else %}
+                        <span class="project-toolbar__status">Owner only</span>
+                    {% endif %}
                 </div>
 
                 {% if not experience_list %}
@@ -59,12 +63,14 @@
                             <h2>No experiences have been added yet.</h2>
                             <p>Belum ada pengalaman yang ditambahkan.</p>
                         </div>
-                        <a
-                            href="{% url 'main:create_experience' %}"
-                            class="button"
-                        >
-                            Add First Experience
-                        </a>
+                        {% if user.is_superuser %}
+                            <a
+                                href="{% url 'main:create_experience' %}"
+                                class="button"
+                            >
+                                Add First Experience
+                            </a>
+                        {% endif %}
                     </div>
                 {% endif %}
 
@@ -135,22 +141,28 @@
                                             </p>
 
                                             <div class="experience-actions">
-                                                <a
-                                                    href="{% url 'main:update_experience' experience.id %}"
-                                                    class="button button-secondary"
-                                                    aria-label="Edit {{ experience.title }}"
-                                                >
-                                                    Edit
-                                                </a>
+                                                {% include "components/experience_star.html" with experience=experience %}
 
-                                                <button
-                                                    type="button"
-                                                    class="button button-danger-outline"
-                                                    popovertarget="delete-experience-{{ experience.id }}"
-                                                    aria-label="Delete {{ experience.title }}"
-                                                >
-                                                    Delete
-                                                </button>
+                                                {% if can_edit_experience %}
+                                                    <a
+                                                        href="{% url 'main:update_experience' experience.id %}"
+                                                        class="button button-secondary"
+                                                        aria-label="Edit {{ experience.title }}"
+                                                    >
+                                                        Edit
+                                                    </a>
+                                                {% endif %}
+
+                                                {% if user.is_superuser %}
+                                                    <button
+                                                        type="button"
+                                                        class="button button-danger-outline"
+                                                        popovertarget="delete-experience-{{ experience.id }}"
+                                                        aria-label="Delete {{ experience.title }}"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                {% endif %}
                                             </div>
                                         </li>
                                     {% empty %}
@@ -165,9 +177,11 @@
                 </div>
 
                 {# Keep popovers outside the card's hover-controlled visibility. #}
-                {% for experience in experience_list %}
-                    {% include "components/experience_delete_modal.html" with experience=experience %}
-                {% endfor %}
+                {% if user.is_superuser %}
+                    {% for experience in experience_list %}
+                        {% include "components/experience_delete_modal.html" with experience=experience %}
+                    {% endfor %}
+                {% endif %}
             </div>
         </section>
     </main>

@@ -10,6 +10,7 @@ from django.urls import reverse
 from main.forms import ExperienceForm
 from main.models import Experience
 
+from django.contrib.auth.models import User
 
 class ExperienceRegressionTests(TestCase):
     def setUp(self):
@@ -19,6 +20,15 @@ class ExperienceRegressionTests(TestCase):
             category="career",
             started_at=datetime(2024, 1, 1, 9, tzinfo=timezone.utc),
         )
+
+        self.superuser = User.objects.create_superuser(
+            username="regression_admin",
+            email="regressionadmin@example.com",
+            password="testpass123",
+        )
+
+        self.client.force_login(self.superuser)
+
         self.add_url = reverse("main:create_experience")
         self.edit_url = reverse("main:update_experience", args=[self.experience.pk])
         self.delete_url = reverse("main:delete_experience", args=[self.experience.pk])
@@ -103,6 +113,8 @@ class ExperienceRegressionTests(TestCase):
 
     def test_csrf_blocks_each_mutation_and_accepts_valid_token(self):
         client = Client(enforce_csrf_checks=True)
+        client.force_login(self.superuser)
+        
         for url in (self.add_url, self.edit_url, self.delete_url):
             with self.subTest(url=url):
                 self.assertEqual(client.post(url, self.payload).status_code, 403)

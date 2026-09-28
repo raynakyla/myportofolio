@@ -126,9 +126,9 @@ ditulis ulang dalam audit lanjutan.
 
 Halaman Experience mempertahankan enam kelompok desain: Career,
 Organizations, Community, Competition, Personal Project, dan Certification.
-Data di halaman tersebut berasal dari endpoint JSON, dideserialisasi kembali
-menjadi objek Django, lalu dikelompokkan untuk ditampilkan pada card yang
-sesuai. Fitur yang tersedia meliputi:
+Halaman ini sekarang mengambil data langsung dari database, lalu
+mengelompokkannya untuk ditampilkan pada card yang sesuai. Endpoint JSON tetap
+tersedia secara terpisah. Fitur yang tersedia meliputi:
 
 - melihat daftar dan empty state di `/experience/`;
 - menambah pengalaman di `/experience/add/`;
@@ -166,9 +166,7 @@ python manage.py test
 
    Serialization diperlukan karena object Django dan queryset Python tidak bisa langsung dikirim sebagai data HTTP dalam bentuk aslinya. Data tersebut perlu diubah terlebih dahulu ke format yang dapat dipertukarkan.
 
-   Pada halaman `/experience/`, data JSON dibaca dan diproses menggunakan `serializers.deserialize`. Hasilnya kemudian dikelompokkan berdasarkan kategori dan dikirim ke template untuk ditampilkan.
-
-   Jadi, alurnya adalah data diubah dari object Django menjadi JSON, kemudian diproses kembali agar bisa digunakan oleh kode Python dan ditampilkan di halaman web.
+   Pada Tugas 3, halaman `/experience/` membaca JSON tersebut dengan `serializers.deserialize`, lalu mengelompokkan hasilnya berdasarkan kategori. Implementasi saat ini mengambil data halaman langsung dari queryset Django agar jumlah star dan status star pengguna dapat disiapkan bersama data Experience. Endpoint JSON tetap dapat diakses secara terpisah.
 
 #### Penggunaan AI pada Tugas 3
 
@@ -183,3 +181,31 @@ Selama proses audit, saya meminta bantuan AI untuk mengidentifikasi beberapa mas
 Saya melakukan verifikasi menggunakan Django system check, migration dry-run, test suite, dan pemeriksaan tampilan melalui browser lokal. Dengan begitu, saya tidak hanya mengandalkan hasil dari AI, tetapi juga memastikan bahwa perubahan yang dilakukan benar-benar sesuai dengan project saya.
 
 Penggunaan AI dalam tugas ini membantu saya memahami langkah-langkah pengerjaan dan menemukan kesalahan selama proses pengembangan. Saya tetap bertanggung jawab untuk memahami, memeriksa, dan memastikan hasil akhir implementasi.
+
+### Tugas 4
+
+Pada Tugas 4, saya melanjutkan fitur dari Tutorial 4 dan menerapkannya ke bagian Experience pada portfolio saya. Fokus utamanya adalah autentikasi, otorisasi berdasarkan role, serta fitur star yang terhubung dengan user.
+
+Untuk autentikasi, saya menggunakan sistem bawaan Django untuk register, login, dan logout. Saya juga tetap menggunakan cookie `last_login` untuk menampilkan waktu login terakhir pada halaman utama. Pengunjung yang belum login masih tetap bisa melihat isi portfolio, tetapi untuk aksi tertentu seperti star atau pengelolaan data akan diarahkan terlebih dahulu ke halaman login.
+
+Bagian yang cukup banyak saya pelajari di tugas ini adalah perbedaan antara authentication dan authorization. Awalnya saya masih menganggap selama user sudah login berarti semua aksi bisa dilakukan, tetapi ternyata aksesnya perlu dibatasi lagi berdasarkan role. Karena itu, saya membuat beberapa level akses untuk Experience:
+- pengguna biasa dapat melihat Experience dan melakukan star/unstar;
+- Editor dapat melakukan star/unstar serta mengubah Experience;
+- superuser dapat melakukan seluruh aksi Create, Read, Update, dan Delete;
+- user yang sudah login tetapi mencoba mengakses fitur di luar haknya akan mendapatkan respons HTTP 403.
+
+Role Editor saya implementasikan menggunakan Django Group bernama `Editor`. Group ini dapat diatur melalui Django Admin, lalu pada view saya melakukan pengecekan apakah user termasuk Editor atau merupakan superuser sebelum memberikan akses ke fitur tertentu. Saya juga tetap melakukan pengecekan permission di sisi server, bukan hanya menyembunyikan tombol pada template, supaya URL Create, Edit, atau Delete tidak bisa diakses langsung oleh user yang tidak memiliki izin.
+
+Saya juga menambahkan fitur star pada Experience dengan relasi `ManyToManyField` antara Experience dan User. Setiap user dapat memberi atau membatalkan star pada Experience, sementara jumlah star tetap dapat dilihat oleh semua pengunjung. Aksi star/unstar dilakukan menggunakan request POST dan tetap menggunakan perlindungan CSRF. Fitur serupa pada Project sebelumnya sudah dibuat pada Tutorial 4 dan kemudian saya rapikan lagi agar perilakunya konsisten.
+
+Pada sisi tampilan, tombol yang tersedia juga menyesuaikan role user. User biasa hanya mendapatkan kontrol star, Editor mendapatkan kontrol star dan edit, sedangkan superuser mendapatkan kontrol create, edit, delete, serta star. Walaupun kontrol tersebut disesuaikan di template, pembatasan akses utama tetap dilakukan pada view Django.
+
+Endpoint JSON untuk Experience dan Project juga tetap saya pertahankan karena masih menjadi bagian dari implementasi sebelumnya. Namun, data relasi star yang berisi ID internal user tidak ditampilkan pada endpoint publik karena tidak dibutuhkan oleh client.
+
+Salah satu bagian yang cukup challenging pada tugas ini adalah ketika authorization mulai diterapkan, cukup banyak automated test dari tugas sebelumnya yang gagal. Hal tersebut terjadi karena test lama masih menganggap halaman Create, Update, dan Delete dapat diakses tanpa autentikasi. Saya kemudian menyesuaikan test agar sesuai dengan aturan akses yang baru, sekaligus menambahkan pengujian khusus untuk membedakan akses anonymous user, regular user, Editor, dan superuser.
+
+Setelah seluruh perubahan dilakukan, saya melakukan pengecekan dengan:
+
+```bash
+python manage.py check
+python manage.py test
