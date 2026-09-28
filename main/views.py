@@ -13,6 +13,10 @@ from django.contrib import messages
 
 from datetime import datetime
 
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+
+
 # Create your views here.
 
 
@@ -197,8 +201,11 @@ def show_projects(request):
 
     return render(request, "projects.html", context)
 
-
+@login_required(login_url="/login/")
 def create_project(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    
     form = ProjectForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -233,7 +240,11 @@ def get_projects_json(request):
         content_type="application/json",
     )
 
+@login_required(login_url="/login/")
 def delete_project(request, project_id):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    
     project = get_object_or_404(
         Project,
         pk=project_id,
