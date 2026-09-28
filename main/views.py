@@ -176,7 +176,7 @@ def get_experiences_json(request):
         "-started_at",
         "title",
     )
-    experiences_json = serializers.serialize("json", experiences)
+    experiences_json = serializers.serialize("json", experiences, use_natural_foreign_keys=True)
     return HttpResponse(experiences_json, content_type="application/json")
 
 
