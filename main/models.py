@@ -2,6 +2,8 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from django.contrib.auth.models import User
+
 # Create your models here.
 
 
@@ -86,6 +88,11 @@ class Project(models.Model):
     thumbnail = models.URLField(blank=True, default='')
     project_url = models.URLField(blank=True, default='')
     is_featured = models.BooleanField(default=False)
+    starred_by = models.ManyToManyField(
+                User,
+                related_name="starred_projects",
+                blank=True
+            )
 
     class Meta:
         ordering = ['-is_featured', 'title']

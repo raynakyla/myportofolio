@@ -17,6 +17,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 
+
+
 # Create your views here.
 
 
@@ -233,7 +235,7 @@ def get_projects_json(request):
     if title_query:
         projects = projects.filter(title__icontains=title_query)
 
-    projects_json = serializers.serialize("json", projects)
+    projects_json = serializers.serialize("json", projects, use_natural_foreign_keys=True)
 
     return HttpResponse(
         projects_json,
@@ -310,6 +312,8 @@ def login_user(request):
     }
 
     return render(request, "login.html", context)
+
+# tutorial 4
 def logout_user(request):
     logout(request)
 
@@ -317,3 +321,16 @@ def logout_user(request):
     response.delete_cookie("last_login")
 
     return response
+
+# tutorial 4
+@login_required(login_url="/login/")
+def toggle_star(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+
+    if request.method == "POST":
+        if request.user in project.starred_by.all():
+            project.starred_by.remove(request.user)
+        else:
+            project.starred_by.add(request.user)
+
+    return redirect("main:show_projects")
