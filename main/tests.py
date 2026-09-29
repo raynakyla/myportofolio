@@ -158,6 +158,50 @@ class ProjectTest(TestCase):
         self.assertTemplateUsed(response, "projects.html")
         self.assertEqual(list(response.context["project_list"]), [self.project])
 
+    def test_projects_ajax_shell_keeps_server_permission_controls(self):
+        response = self.client.get(reverse("main:show_projects"))
+        for element_id in (
+            "projects-loading", "projects-error", "projects-empty", "projects-grid",
+        ):
+            self.assertContains(response, f'id="{element_id}"')
+        self.assertContains(response, 'src="/static/js/projects.js"')
+        self.assertContains(response, reverse("main:get_projects_json"))
+        self.assertNotContains(response, "data-delete-url-template")
+
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertContains(response, "data-delete-url-template")
+
+    def test_projects_api_exposes_card_data_without_user_ids(self):
+        regular = User.objects.create_user(username="reader", password="secret")
+        other = User.objects.create_user(username="another", password="secret")
+        self.project.starred_by.add(regular, other)
+        url = reverse("main:get_projects_json")
+
+        anonymous_response = self.client.get(url)
+        self.assertEqual(anonymous_response.status_code, 200)
+        self.assertEqual(anonymous_response["Cache-Control"], "private, no-store")
+        anonymous_project = anonymous_response.json()[0]
+        self.assertEqual(anonymous_project["star_count"], 2)
+        self.assertFalse(anonymous_project["is_starred"])
+        self.assertEqual(anonymous_project["category_display"], "Product & UX")
+        self.assertEqual(anonymous_project["id"], str(self.project.pk))
+        self.assertEqual(
+            set(anonymous_project),
+            {
+                "id", "title", "description", "category_display", "role",
+                "skills", "thumbnail", "project_url", "is_featured",
+                "star_count", "is_starred",
+            },
+        )
+        self.assertNotIn(regular.username, anonymous_response.content.decode())
+
+        self.client.force_login(regular)
+        starred_project = self.client.get(url).json()[0]
+        self.assertTrue(starred_project["is_starred"])
+        self.assertEqual(starred_project["star_count"], 2)
+        self.assertEqual(self.client.get(url, {"title": "missing"}).json(), [])
+
     def test_create_project_form_is_accessible(self):
         self.client.force_login(self.superuser)
         response = self.client.get(reverse("main:create_project"))

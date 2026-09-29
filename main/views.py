@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.core import serializers
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -223,19 +223,10 @@ def toggle_experience_star(request, experience_id):
 
 
 def show_projects(request):
-    json_response = get_projects_json(request)
-
-    serialized_projects = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-
-    projects = [
-        serialized_project.object
-        for serialized_project in serialized_projects
-    ]
-
     title_query = request.GET.get("title", "").strip()
+    projects = Project.objects.all()
+    if title_query:
+        projects = projects.filter(title__icontains=title_query)
 
     context = {
         "name": PORTFOLIO_OWNER,
@@ -272,25 +263,41 @@ def create_project(request):
 def get_projects_json(request):
     title_query = request.GET.get("title", "").strip()
 
-    projects = Project.objects.all()
+    projects = Project.objects.annotate(
+        star_count=Count("starred_by", distinct=True),
+    )
+    if request.user.is_authenticated:
+        stars = Project.starred_by.through.objects.filter(
+            project_id=OuterRef("pk"), user_id=request.user.pk,
+        )
+        projects = projects.annotate(is_starred=Exists(stars))
+    else:
+        projects = projects.annotate(
+            is_starred=Value(False, output_field=BooleanField()),
+        )
 
     if title_query:
         projects = projects.filter(title__icontains=title_query)
 
-    projects_json = serializers.serialize(
-        "json",
-        projects,
-        fields=(
-            "title", "description", "category", "role", "skills",
-            "thumbnail", "project_url", "is_featured",
-        ),
-        use_natural_foreign_keys=True,
-    )
-
-    return HttpResponse(
-        projects_json,
-        content_type="application/json",
-    )
+    project_data = [
+        {
+            "id": str(project.pk),
+            "title": project.title,
+            "description": project.description,
+            "category_display": project.get_category_display(),
+            "role": project.role,
+            "skills": project.skills,
+            "thumbnail": project.thumbnail,
+            "project_url": project.project_url,
+            "is_featured": project.is_featured,
+            "star_count": project.star_count,
+            "is_starred": project.is_starred,
+        }
+        for project in projects
+    ]
+    response = JsonResponse(project_data, safe=False)
+    response["Cache-Control"] = "private, no-store"
+    return response
 
 @login_required(login_url="/login/")
 def delete_project(request, project_id):

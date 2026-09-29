@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block meta %}
     <meta
@@ -7,6 +8,7 @@
     >
 
     <title>Projects - {{ name }}</title>
+    <script src="{% static 'js/projects.js' %}" defer></script>
 {% endblock meta %}
 
 {% block content %}
@@ -111,18 +113,61 @@
                         Search
                     </button>
 
-                    {% if title_query %}
-                        <a
-                            href="{% url 'main:show_projects' %}"
-                            class="button button-secondary"
-                        >
-                            Clear
-                        </a>
-                    {% endif %}
+                    <a
+                        id="projects-clear"
+                        href="{% url 'main:show_projects' %}"
+                        class="button button-secondary"
+                        {% if not title_query %}hidden{% endif %}
+                    >
+                        Clear
+                    </a>
 
                 </form>
 
-                <!-- Project cards -->
+                <div id="projects-loading" class="projects-grid" role="status" aria-label="Loading projects" hidden>
+                    {% for _ in "12" %}
+                        <div class="project-card project-skeleton glass-surface" aria-hidden="true">
+                            <div class="project-skeleton__image"></div>
+                            <div class="project-content">
+                                <span class="project-skeleton__line project-skeleton__line--short"></span>
+                                <span class="project-skeleton__line project-skeleton__line--title"></span>
+                                <span class="project-skeleton__line"></span>
+                                <span class="project-skeleton__line project-skeleton__line--medium"></span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div id="projects-error" class="projects-empty-state projects-feedback glass-surface" role="alert" hidden>
+                    <span class="projects-empty-mark" aria-hidden="true">!</span>
+                    <h2>Projects took a little detour.</h2>
+                    <p>They couldn't load just now. Please try again.</p>
+                    <button id="projects-retry" type="button" class="button projects-retry">Try Again</button>
+                </div>
+
+                <div id="projects-empty" class="projects-empty-state projects-feedback glass-surface" hidden>
+                    <span class="projects-empty-mark" aria-hidden="true">&plus;</span>
+                    <h2 id="projects-empty-title"></h2>
+                    <p id="projects-empty-message"></p>
+                    <a id="projects-empty-clear" href="{% url 'main:show_projects' %}" class="button" hidden>View All Projects</a>
+                    {% if user.is_superuser %}
+                        <a id="projects-empty-add" href="{% url 'main:create_project' %}" class="button" hidden>Add First Project</a>
+                    {% endif %}
+                </div>
+
+                <div
+                    id="projects-grid"
+                    class="projects-grid"
+                    data-api-url="{% url 'main:get_projects_json' %}"
+                    data-star-url-template="{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}"
+                    data-csrf-token="{{ csrf_token }}"
+                    data-is-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+                    {% if user.is_superuser %}data-delete-url-template="{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
+                    hidden
+                ></div>
+
+                <!-- Server-rendered fallback when JavaScript is unavailable. -->
+                <noscript>
                 <div class="projects-grid">
 
                     {% for project in project_list %}
@@ -282,6 +327,7 @@
                     {% endfor %}
 
                 </div>
+                </noscript>
 
             </div>
 
