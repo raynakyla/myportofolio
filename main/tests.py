@@ -242,6 +242,29 @@ class ProjectTest(TestCase):
         self.assertRedirects(response, reverse("main:show_projects"))
         self.assertTrue(Project.objects.filter(title="Tutorial 3 project").exists())
 
+    def test_normal_create_strips_html_from_plain_text_before_saving(self):
+        self.client.force_login(self.superuser)
+
+        response = self.client.post(
+            reverse("main:create_project"),
+            {
+                "title": "<b>My Project</b><script>alert(1)</script>",
+                "description": "<p>Project details</p><img src=x onerror=alert(2)>",
+                "category": "web",
+                "role": "<strong>Developer</strong>",
+                "skills": "<em>Django</em>, <b>JavaScript</b>",
+            },
+        )
+
+        self.assertRedirects(response, reverse("main:show_projects"))
+        project = Project.objects.get(title="My Projectalert(1)")
+        self.assertEqual(project.description, "Project details")
+        self.assertEqual(project.role, "Developer")
+        self.assertEqual(project.skills, "Django, JavaScript")
+        for value in (project.title, project.description, project.role, project.skills):
+            self.assertNotIn("<", value)
+            self.assertNotIn(">", value)
+
     def test_create_project_rejects_invalid_form(self):
         self.client.force_login(self.superuser)
 
@@ -297,6 +320,46 @@ class ProjectTest(TestCase):
         self.assertTrue(Project.objects.filter(title="New idea").exists())
         titles = [item["title"] for item in self.client.get(reverse("main:get_projects_json")).json()]
         self.assertIn("New idea", titles)
+
+    def test_ajax_create_strips_html_before_saving(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse("main:create_project_ajax"),
+            {
+                "title": "<b>AJAX Project</b>",
+                "description": "<p>Created from the modal</p><script>alert(1)</script>",
+                "category": "web",
+                "role": "<strong>Designer</strong>",
+                "skills": "<em>Figma</em>",
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.json()["success"])
+        project = Project.objects.get(title="AJAX Project")
+        self.assertEqual(project.description, "Created from the modalalert(1)")
+        self.assertEqual(project.role, "Designer")
+        self.assertEqual(project.skills, "Figma")
+        for value in (project.title, project.description, project.role, project.skills):
+            self.assertNotIn("<", value)
+            self.assertNotIn(">", value)
+
+    def test_ajax_create_rejects_title_empty_after_stripping_tags(self):
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse("main:create_project_ajax"),
+            {
+                "title": "<script></script>",
+                "description": "A project without a title",
+                "category": "web",
+                "role": "Developer",
+                "skills": "Django",
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("title", response.json()["errors"])
+        self.assertFalse(Project.objects.filter(description="A project without a title").exists())
 
     def test_ajax_create_requires_csrf_token(self):
         client = Client(enforce_csrf_checks=True)

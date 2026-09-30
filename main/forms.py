@@ -7,6 +7,7 @@ from django.forms import (
     TextInput,
     URLInput,
 )
+from django.utils.html import strip_tags
 
 from main.models import Experience, Project
 
@@ -153,3 +154,19 @@ class ProjectForm(ModelForm):
                 }
             ),
         }
+
+    def _clean_plain_text(self, field_name):
+        value = strip_tags(self.cleaned_data[field_name])
+        return self.fields[field_name].clean(value)
+
+    def clean_title(self):
+        return self._clean_plain_text("title")
+
+    def clean_description(self):
+        return self._clean_plain_text("description")
+
+    def clean_role(self):
+        return self._clean_plain_text("role")
+
+    def clean_skills(self):
+        return self._clean_plain_text("skills")
