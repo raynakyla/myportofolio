@@ -1,14 +1,14 @@
 import json
 import uuid
 from datetime import timedelta
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 # Create your tests here.
 
 from main.models import Experience, Project
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 
 class MainTest(TestCase):
     def setUp(self):
@@ -167,10 +167,13 @@ class ProjectTest(TestCase):
         self.assertContains(response, 'src="/static/js/projects.js"')
         self.assertContains(response, reverse("main:get_projects_json"))
         self.assertNotContains(response, "data-delete-url-template")
+        self.assertNotContains(response, 'id="project-create-modal"')
 
         self.client.force_login(self.superuser)
         response = self.client.get(reverse("main:show_projects"))
         self.assertContains(response, "data-delete-url-template")
+        self.assertContains(response, 'id="project-create-modal"')
+        self.assertContains(response, f'action="{reverse("main:create_project_ajax")}"')
 
     def test_projects_api_exposes_card_data_without_user_ids(self):
         regular = User.objects.create_user(username="reader", password="secret")
@@ -256,6 +259,61 @@ class ProjectTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFormError(response.context["form"], "title", "This field is required.")
         self.assertFalse(Project.objects.filter(description="Missing a required title.").exists())
+
+    def test_ajax_create_requires_post_login_and_superuser(self):
+        url = reverse("main:create_project_ajax")
+        payload = {
+            "title": "New idea", "description": "A new project", "category": "web",
+            "role": "Developer", "skills": "Django",
+        }
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.assertEqual(self.client.post(url, payload).status_code, 401)
+
+        editor = User.objects.create_user(username="editor", password="secret")
+        editor.groups.add(Group.objects.create(name="Editor"))
+        self.client.force_login(editor)
+        response = self.client.post(url, payload)
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(response.json()["success"])
+        self.assertFalse(Project.objects.filter(title="New idea").exists())
+
+    def test_ajax_create_validates_and_refresh_api_can_see_project(self):
+        self.client.force_login(self.superuser)
+        url = reverse("main:create_project_ajax")
+        payload = {
+            "title": "", "description": "A new project", "category": "web",
+            "role": "Developer", "skills": "Django", "thumbnail": "not-a-url",
+        }
+        response = self.client.post(url, payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("title", response.json()["errors"])
+        self.assertIn("thumbnail", response.json()["errors"])
+        self.assertFalse(Project.objects.filter(description="A new project").exists())
+
+        payload.update(title="New idea", thumbnail="")
+        response = self.client.post(url, payload)
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.json()["success"])
+        self.assertTrue(Project.objects.filter(title="New idea").exists())
+        titles = [item["title"] for item in self.client.get(reverse("main:get_projects_json")).json()]
+        self.assertIn("New idea", titles)
+
+    def test_ajax_create_requires_csrf_token(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.superuser)
+        page = client.get(reverse("main:show_projects"))
+        self.assertContains(page, 'name="csrfmiddlewaretoken"')
+        url = reverse("main:create_project_ajax")
+        payload = {
+            "title": "CSRF protected", "description": "Details", "category": "web",
+            "role": "Developer", "skills": "Django",
+        }
+        self.assertEqual(client.post(url, payload).status_code, 403)
+        response = client.post(
+            url, payload, HTTP_X_CSRFTOKEN=client.cookies["csrftoken"].value,
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Project.objects.filter(title="CSRF protected").exists())
 
     def test_project_content_and_optional_fields_absent(self):
         response = self.client.get(reverse("main:show_projects"))

@@ -233,6 +233,8 @@ def show_projects(request):
         "project_list": projects,
         "title_query": title_query,
     }
+    if request.user.is_superuser:
+        context["create_form"] = ProjectForm()
 
     return render(request, "projects.html", context)
 
@@ -259,6 +261,33 @@ def create_project(request):
     }
 
     return render(request, "projects_form.html", context)
+
+
+@require_POST
+def create_project_ajax(request):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "message": "Please sign in to add a project."},
+            status=401,
+        )
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"success": False, "message": "Only the owner can add projects."},
+            status=403,
+        )
+
+    form = ProjectForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse(
+            {"success": False, "errors": form.errors.get_json_data()},
+            status=400,
+        )
+
+    form.save()
+    return JsonResponse(
+        {"success": True, "message": "Project created successfully."},
+        status=201,
+    )
 
 def get_projects_json(request):
     title_query = request.GET.get("title", "").strip()

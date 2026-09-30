@@ -40,8 +40,11 @@
 
                 {% if user.is_superuser %}
                     <a
+                        id="project-create-open"
                         href="{% url 'main:create_project' %}"
                         class="project-toolbar project-toolbar--active glass-surface"
+                        aria-haspopup="dialog"
+                        aria-controls="project-create-modal"
                     >
                 {% else %}
                     <div class="project-toolbar project-toolbar--owner-only glass-surface">
@@ -151,7 +154,7 @@
                     <p id="projects-empty-message"></p>
                     <a id="projects-empty-clear" href="{% url 'main:show_projects' %}" class="button" hidden>View All Projects</a>
                     {% if user.is_superuser %}
-                        <a id="projects-empty-add" href="{% url 'main:create_project' %}" class="button" hidden>Add First Project</a>
+                        <a id="projects-empty-add" href="{% url 'main:create_project' %}" class="button" aria-haspopup="dialog" aria-controls="project-create-modal" hidden>Add First Project</a>
                     {% endif %}
                 </div>
 
@@ -332,6 +335,41 @@
             </div>
 
         </section>
+
+        {% if user.is_superuser %}
+            <dialog id="project-create-modal" class="project-create-modal" aria-labelledby="project-create-title">
+                <div class="project-create-modal__header">
+                    <div>
+                        <p class="eyebrow">New creation</p>
+                        <h2 id="project-create-title">Add a new project.</h2>
+                        <p>Capture the little details that make this work yours.</p>
+                    </div>
+                    <button type="button" class="project-create-modal__close" data-close-project-modal aria-label="Close add project form">&times;</button>
+                </div>
+
+                <form id="project-create-form" class="project-form project-create-form" method="post" action="{% url 'main:create_project_ajax' %}" novalidate>
+                    {% csrf_token %}
+                    {% for field in create_form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+                            <p id="project-create-error-{{ field.name }}" class="form-error" hidden></p>
+                        </div>
+                    {% endfor %}
+
+                    <p id="project-create-error-general" class="form-error project-create-form__general-error" role="alert" hidden></p>
+
+                    <div class="form-actions">
+                        <button type="button" class="button button-quiet" data-close-project-modal>Cancel</button>
+                        <button id="project-create-submit" type="submit" class="button button-primary project-create-submit">
+                            <span aria-hidden="true">&plus;</span>
+                            <span id="project-create-submit-label">Add project</span>
+                        </button>
+                    </div>
+                </form>
+            </dialog>
+        {% endif %}
 
     </main>
 {% endblock content %}

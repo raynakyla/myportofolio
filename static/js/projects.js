@@ -249,5 +249,149 @@ document.addEventListener('DOMContentLoaded', () => {
         loadProjects(searchInput.value.trim());
     });
 
+    const createModal = document.getElementById('project-create-modal');
+    if (createModal) {
+        const createForm = document.getElementById('project-create-form');
+        const submitButton = document.getElementById('project-create-submit');
+        const submitLabel = document.getElementById('project-create-submit-label');
+        const generalError = document.getElementById('project-create-error-general');
+        const closeButtons = createModal.querySelectorAll('[data-close-project-modal]');
+        let submitting = false;
+        let opener = null;
+        let afterClose = null;
+
+        function clearCreateErrors() {
+            createForm.querySelectorAll('.form-error').forEach(node => {
+                node.textContent = '';
+                node.hidden = true;
+            });
+            createForm.querySelectorAll('[aria-invalid]').forEach(field => {
+                field.removeAttribute('aria-invalid');
+                field.removeAttribute('aria-errormessage');
+            });
+        }
+
+        function showCreateError(message) {
+            generalError.textContent = message;
+            generalError.hidden = false;
+        }
+
+        function showCreateValidation(errors) {
+            let firstInvalid = null;
+            for (const [name, details] of Object.entries(errors)) {
+                const message = details.map(error => error.message).join(' ');
+                const field = createForm.elements.namedItem(name);
+                const errorNode = document.getElementById(`project-create-error-${name}`);
+                if (name === '__all__' || !field || !errorNode) {
+                    showCreateError(message);
+                    continue;
+                }
+                errorNode.textContent = message;
+                errorNode.hidden = false;
+                field.setAttribute('aria-invalid', 'true');
+                field.setAttribute('aria-errormessage', errorNode.id);
+                if (!firstInvalid) firstInvalid = field;
+            }
+            if (firstInvalid) firstInvalid.focus();
+        }
+
+        function setSubmitting(value) {
+            submitting = value;
+            submitButton.disabled = value;
+            submitLabel.textContent = value ? 'Adding project...' : 'Add project';
+            createForm.setAttribute('aria-busy', String(value));
+            closeButtons.forEach(button => { button.disabled = value; });
+        }
+
+        function closeCreateModal(force = false, callback = null) {
+            if (!createModal.open || createModal.classList.contains('is-closing') || (submitting && !force)) return;
+            afterClose = callback;
+            createModal.classList.add('is-closing');
+            const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 180;
+            window.setTimeout(() => {
+                createModal.close();
+                createModal.classList.remove('is-closing');
+            }, delay);
+        }
+
+        [document.getElementById('project-create-open'), emptyAddLink].forEach(trigger => {
+            if (!trigger) return;
+            trigger.addEventListener('click', event => {
+                event.preventDefault();
+                if (createModal.open) return;
+                opener = trigger;
+                clearCreateErrors();
+                createModal.showModal();
+                createForm.elements.namedItem('title').focus();
+            });
+        });
+
+        closeButtons.forEach(button => button.addEventListener('click', () => closeCreateModal()));
+        createModal.addEventListener('click', event => {
+            if (event.target === createModal) closeCreateModal();
+        });
+        createModal.addEventListener('cancel', event => {
+            event.preventDefault();
+            closeCreateModal();
+        });
+        createModal.addEventListener('close', () => {
+            createForm.reset();
+            clearCreateErrors();
+            if (opener) opener.focus();
+            if (afterClose) {
+                const callback = afterClose;
+                afterClose = null;
+                callback();
+            }
+        });
+
+        createForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (submitting) return;
+            clearCreateErrors();
+            setSubmitting(true);
+
+            try {
+                const csrfToken = createForm.elements.namedItem('csrfmiddlewaretoken').value;
+                const response = await fetch(createForm.action, {
+                    method: 'POST',
+                    body: new FormData(createForm),
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                });
+                let result;
+                try {
+                    result = await response.json();
+                } catch {
+                    throw new Error('The server did not return a usable response. Please try again.');
+                }
+
+                if (response.status === 400 && result.errors) {
+                    showCreateValidation(result.errors);
+                    return;
+                }
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Could not add the project. Please try again.');
+                }
+
+                setSubmitting(false);
+                closeCreateModal(true, () => {
+                    showToast('Project added', result.message, 'success');
+                    searchInput.value = '';
+                    updateSearch('');
+                });
+            } catch (error) {
+                showCreateError(error instanceof TypeError
+                    ? 'Could not connect. Please try again.'
+                    : (error.message || 'Could not add the project. Please try again.'));
+            } finally {
+                setSubmitting(false);
+            }
+        });
+    }
+
     loadProjects(searchInput.value.trim());
 });
