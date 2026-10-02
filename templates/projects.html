@@ -288,4 +288,28 @@
         </section>
 
     </main>
+
+    <script>
+    async function getProjects() {
+        try {
+            const response = await fetch("{% url 'main:get_projects_json' %}");
+
+            if (!response.ok) {
+                throw new Error("Failed to fetch projects");
+            }
+
+            const projects = await response.json();
+            console.log("Projects from API:", projects);
+
+            return projects;
+        } catch (error) {
+            console.error("Error fetching projects:", error);
+            return [];
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        getProjects();
+    });
+    </script>
 {% endblock content %}
