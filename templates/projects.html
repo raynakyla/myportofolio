@@ -123,193 +123,217 @@
                 </form>
 
                 <!-- Project cards -->
-                <div class="projects-grid">
-
-                    {% for project in project_list %}
-
-                        <article
-                            class="project-card glass-surface"
-                            aria-labelledby="project-{{ project.id }}"
-                        >
-
-                            {% if project.thumbnail %}
-
-                                <img
-                                    class="project-thumbnail"
-                                    src="{{ project.thumbnail }}"
-                                    alt="Preview of {{ project.title }}"
-                                    loading="lazy"
-                                    width="640"
-                                    height="360"
-                                >
-
-                            {% else %}
-
-                                <div
-                                    class="project-placeholder"
-                                    aria-hidden="true"
-                                >
-                                    <span class="project-placeholder-mark">
-                                        {{ project.title|first }}
-                                    </span>
-
-                                    <span>
-                                        {{ project.get_category_display }}
-                                    </span>
-                                </div>
-
-                            {% endif %}
-
-                            <div class="project-content">
-
-                                <div class="project-badges">
-
-                                    <span class="project-category">
-                                        {{ project.get_category_display }}
-                                    </span>
-
-                                    {% if project.is_featured %}
-                                        <span class="featured-badge">
-                                            Featured
-                                        </span>
-                                    {% endif %}
-
-                                </div>
-
-                                <h2 id="project-{{ project.id }}">
-                                    {{ project.title }}
-                                </h2>
-
-                                <p class="project-description">
-                                    {{ project.description }}
-                                </p>
-
-                                <dl class="project-details">
-
-                                    <div class="project-role">
-                                        <dt>My role</dt>
-                                        <dd>{{ project.role }}</dd>
-                                    </div>
-
-                                    <div class="project-skills">
-                                        <dt>Skills</dt>
-                                        <dd>{{ project.skills }}</dd>
-                                    </div>
-
-                                </dl>
-
-                                <div class="project-card-actions">
-
-                                    {% if project.project_url %}
-                                        <a
-                                            class="button"
-                                            href="{{ project.project_url }}"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            aria-label="View Project: {{ project.title }} (opens in a new tab)"
-                                        >
-                                            View Project
-                                            <span aria-hidden="true">
-                                                &nearr;
-                                            </span>
-                                        </a>
-                                    {% endif %}
-
-                                    {% include "components/project_star.html" with project=project %}
-
-                                    {% if user.is_superuser %}
-                                        {% include "components/project_delete_modal.html" with project=project %}
-                                    {% endif %}
-
-                                </div>
-
-                            </div>
-
-                        </article>
-
-                    {% empty %}
-
-                        <div class="projects-empty-state glass-surface">
-
-                            <span
-                                class="projects-empty-mark"
-                                aria-hidden="true"
-                            >
-                                &plus;
-                            </span>
-
-                            {% if title_query %}
-
-                                <h2>
-                                    No matching projects found.
-                                </h2>
-
-                                <p>
-                                    We couldn&rsquo;t find a project titled
-                                    “{{ title_query }}”.
-                                </p>
-
-                                <a
-                                    href="{% url 'main:show_projects' %}"
-                                    class="button"
-                                >
-                                    View All Projects
-                                </a>
-
-                            {% else %}
-
-                                <h2>
-                                    No projects have been added yet.
-                                </h2>
-
-                                <p>
-                                    A little space for the next idea.
-                                </p>
-
-                                {% if user.is_superuser %}
-                                    <a
-                                        href="{% url 'main:create_project' %}"
-                                        class="button"
-                                    >
-                                        Add First Project
-                                    </a>
-                                {% endif %}
-
-                            {% endif %}
-
-                        </div>
-
-                    {% endfor %}
-
-                </div>
-
+                <div
+                    id="projects-grid"
+                    class="projects-grid"
+                    data-is-superuser="{{ user.is_superuser|yesno:'true,false' }}"
+>
+               <div class="projects-empty-state glass-surface">
+                    <p>Loading projects...</p>
+               </div>
+               
             </div>
 
+            </div>
         </section>
 
     </main>
 
     <script>
-    async function getProjects() {
-        try {
-            const response = await fetch("{% url 'main:get_projects_json' %}");
+        async function getProjects() {
+            try {
+                const response = await fetch("{% url 'main:get_projects_json' %}");
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch projects");
+                if (!response.ok) {
+                    throw new Error("Failed to fetch projects");
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error("Error fetching projects:", error);
+                return [];
+            }
+        }
+
+        function escapeHTML(value) {
+            const element = document.createElement("div");
+            element.textContent = value ?? "";
+            return element.innerHTML;
+        }
+
+        function formatProjectCategory(category) {
+            if (!category) {
+                return "Project";
             }
 
-            const projects = await response.json();
-            console.log("Projects from API:", projects);
-
-            return projects;
-        } catch (error) {
-            console.error("Error fetching projects:", error);
-            return [];
+            return category
+                .replaceAll("_", " ")
+                .replace(/\b\w/g, (letter) => letter.toUpperCase());
         }
-    }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        getProjects();
-    });
+        function createProjectCard(project) {
+            const fields = project.fields;
+            const projectId = project.pk;
+
+            const title = escapeHTML(fields.title);
+            const description = escapeHTML(fields.description);
+            const role = escapeHTML(fields.role);
+            const skills = escapeHTML(fields.skills);
+
+            const category = formatProjectCategory(fields.category);
+
+            const thumbnail = fields.thumbnail
+                ? `
+                    <img
+                        class="project-thumbnail"
+                        src="${escapeHTML(fields.thumbnail)}"
+                        alt="Preview of ${title}"
+                        loading="lazy"
+                        width="640"
+                        height="360"
+                    >
+                `
+                : `
+                    <div
+                        class="project-placeholder"
+                        aria-hidden="true"
+                    >
+                        <span class="project-placeholder-mark">
+                            ${title.charAt(0)}
+                        </span>
+                        <span>${escapeHTML(category)}</span>
+                    </div>
+                `;
+
+            const featuredBadge = fields.is_featured
+                ? `<span class="featured-badge">Featured</span>`
+                : "";
+
+            const projectLink = fields.project_url
+                ? `
+                    <a
+                        class="button"
+                        href="${escapeHTML(fields.project_url)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="View Project: ${title} (opens in a new tab)"
+                    >
+                        View Project
+                        <span aria-hidden="true">&nearr;</span>
+                    </a>
+                `
+                : "";
+
+            return `
+                <article
+                    class="project-card glass-surface"
+                    aria-labelledby="project-${projectId}"
+                    data-project-id="${projectId}"
+                >
+                    ${thumbnail}
+
+                    <div class="project-content">
+                        <div class="project-badges">
+                            <span class="project-category">
+                                ${escapeHTML(category)}
+                            </span>
+
+                            ${featuredBadge}
+                        </div>
+
+                        <h2 id="project-${projectId}">
+                            ${title}
+                        </h2>
+
+                        <p class="project-description">
+                            ${description}
+                        </p>
+
+                        <dl class="project-details">
+                            <div class="project-role">
+                                <dt>My role</dt>
+                                <dd>${role}</dd>
+                            </div>
+
+                            <div class="project-skills">
+                                <dt>Skills</dt>
+                                <dd>${skills}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="project-card-actions">
+                            ${projectLink}
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+
+        
+        async function refreshProjects() {
+            const container = document.getElementById("projects-grid");
+
+            container.innerHTML = `
+                <div class="projects-empty-state glass-surface">
+                    <p>Loading projects...</p>
+                </div>
+            `;
+
+            const projects = await getProjects();
+
+            const params = new URLSearchParams(window.location.search);
+            const titleQuery = params.get("title");
+
+            const filteredProjects = titleQuery
+                ? projects.filter((project) =>
+                    project.fields.title
+                        .toLowerCase()
+                        .includes(titleQuery.toLowerCase())
+                )
+                : projects;
+
+
+            if (filteredProjects.length === 0) {
+                if (titleQuery) {
+                    container.innerHTML = `
+                        <div class="projects-empty-state glass-surface">
+                            <span class="projects-empty-mark" aria-hidden="true">
+                                &plus;
+                            </span>
+
+                            <h2>No matching projects found.</h2>
+
+                            <p>
+                                We couldn&rsquo;t find a project titled
+                                “${escapeHTML(titleQuery)}”.
+                            </p>
+
+                            <a href="{% url 'main:show_projects' %}" class="button">
+                                View All Projects
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="projects-empty-state glass-surface">
+                            <span class="projects-empty-mark" aria-hidden="true">
+                                &plus;
+                            </span>
+
+                            <h2>No projects have been added yet.</h2>
+                            <p>A little space for the next idea.</p>
+                        </div>
+                    `;
+                }
+
+                return;
+            }
+
+            container.innerHTML = filteredProjects
+                .map(createProjectCard)
+                .join("");
+        }
+
+        document.addEventListener("DOMContentLoaded", refreshProjects);
     </script>
 {% endblock content %}

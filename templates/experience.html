@@ -103,73 +103,13 @@
                             </header>
 
                             <div class="experience-list-wrap">
-                                <ul class="experience-list">
-                                    {% for experience in group.items %}
-                                        <li class="experience-item">
-                                            {% if experience.thumbnail %}
-                                                <img
-                                                    src="{{ experience.thumbnail }}"
-                                                    alt="Preview of {{ experience.title }}"
-                                                    class="experience-thumbnail"
-                                                    loading="lazy"
-                                                    width="480"
-                                                    height="270"
-                                                >
-                                            {% endif %}
-
-                                            <div class="experience-item-heading">
-                                                <h3>{{ experience.title }}</h3>
-                                                <span class="experience-period">
-                                                    {% if experience.started_at %}
-                                                        {{ experience.started_at|date:"M Y" }}
-                                                    {% else %}
-                                                        Start date not specified
-                                                    {% endif %}
-                                                </span>
-                                            </div>
-
-                                            <p class="experience-description">
-                                                {{ experience.description }}
-                                            </p>
-
-                                            <p class="experience-status">
-                                                {% if experience.is_ongoing %}
-                                                    on-going
-                                                {% else %}
-                                                    finished {{ experience.ended_at|date:"M Y" }}
-                                                {% endif %}
-                                            </p>
-
-                                            <div class="experience-actions">
-                                                {% include "components/experience_star.html" with experience=experience %}
-
-                                                {% if can_edit_experience %}
-                                                    <a
-                                                        href="{% url 'main:update_experience' experience.id %}"
-                                                        class="button button-secondary"
-                                                        aria-label="Edit {{ experience.title }}"
-                                                    >
-                                                        Edit
-                                                    </a>
-                                                {% endif %}
-
-                                                {% if user.is_superuser %}
-                                                    <button
-                                                        type="button"
-                                                        class="button button-danger-outline"
-                                                        popovertarget="delete-experience-{{ experience.id }}"
-                                                        aria-label="Delete {{ experience.title }}"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                {% endif %}
-                                            </div>
-                                        </li>
-                                    {% empty %}
-                                        <li class="experience-category-empty">
-                                            No entries in this category yet.
-                                        </li>
-                                    {% endfor %}
+                                <ul
+                                    class="experience-list"
+                                    data-experience-category="{{ group.key }}"
+                                >
+                                    <li class="experience-category-empty">
+                                         Loading experiences...
+                                    </li>
                                 </ul>
                             </div>
                         </article>
@@ -186,26 +126,153 @@
         </section>
     </main>
     <script>
-    async function getExperiences() {
-        try {
-            const response = await fetch("{% url 'main:get_experiences_json' %}");
+        async function getExperiences() {
+            try {
+                const response = await fetch(
+                    "{% url 'main:get_experiences_json' %}"
+                );
 
-            if (!response.ok) {
-                throw new Error("Failed to fetch experiences");
+                if (!response.ok) {
+                    throw new Error("Failed to fetch experiences");
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error("Error fetching experiences:", error);
+                return [];
+            }
+        }
+
+        function escapeHTML(value) {
+            const element = document.createElement("div");
+            element.textContent = value ?? "";
+            return element.innerHTML;
+        }
+
+        function formatExperienceDate(dateValue) {
+            if (!dateValue) {
+                return null;
             }
 
-            const experiences = await response.json();
-            console.log("Experiences from API:", experiences);
+            const date = new Date(dateValue);
 
-            return experiences;
-        } catch (error) {
-            console.error("Error fetching experiences:", error);
-            return [];
+            return date.toLocaleDateString("en-US", {
+                month: "short",
+                year: "numeric",
+            });
         }
-    }
 
-    document.addEventListener("DOMContentLoaded", function () {
-        getExperiences();
-    });
+        function createExperienceItem(experience) {
+            const fields = experience.fields;
+            const experienceId = experience.pk;
+
+            const title = escapeHTML(fields.title);
+            const description = escapeHTML(fields.description);
+
+            const thumbnail = fields.thumbnail
+                ? `
+                    <img
+                        src="${escapeHTML(fields.thumbnail)}"
+                        alt="Preview of ${title}"
+                        class="experience-thumbnail"
+                        loading="lazy"
+                        width="480"
+                        height="270"
+                    >
+                `
+                : "";
+
+            const startedAt = formatExperienceDate(fields.started_at);
+
+            const period = startedAt
+                ? startedAt
+                : "Start date not specified";
+
+            let status;
+
+            if (fields.is_ongoing) {
+                status = "on-going";
+            } else {
+                const endedAt = formatExperienceDate(fields.ended_at);
+
+                status = endedAt
+                    ? `finished ${endedAt}`
+                    : "finished";
+            }
+
+            return `
+                <li
+                    class="experience-item"
+                    data-experience-id="${experienceId}"
+                >
+                    ${thumbnail}
+
+                    <div class="experience-item-heading">
+                        <h3>${title}</h3>
+
+                        <span class="experience-period">
+                            ${period}
+                        </span>
+                    </div>
+
+                    <p class="experience-description">
+                        ${description}
+                    </p>
+
+                    <p class="experience-status">
+                        ${status}
+                    </p>
+
+                    <div class="experience-actions">
+                    </div>
+                </li>
+            `;
+        }
+
+        async function refreshExperiences() {
+            const experiences = await getExperiences();
+
+            const categoryLists =
+                document.querySelectorAll("[data-experience-category]");
+
+            categoryLists.forEach((list) => {
+                list.innerHTML = `
+                    <li class="experience-category-empty">
+                        No entries in this category yet.
+                    </li>
+                `;
+            });
+
+            const groupedExperiences = {};
+
+            experiences.forEach((experience) => {
+                const category = experience.fields.category;
+
+                if (!groupedExperiences[category]) {
+                    groupedExperiences[category] = [];
+                }
+
+                groupedExperiences[category].push(experience);
+            });
+
+            categoryLists.forEach((list) => {
+                const category = list.dataset.experienceCategory;
+
+                const items = groupedExperiences[category] ?? [];
+
+                if (items.length === 0) {
+                    return;
+                }
+
+                list.innerHTML = items
+                    .map(createExperienceItem)
+                    .join("");
+            });
+        }
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            refreshExperiences
+        );
     </script>
 {% endblock content %}
