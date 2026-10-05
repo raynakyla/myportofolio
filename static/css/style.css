@@ -1785,6 +1785,62 @@ body:has(.auth-section) .site-footer .container {
     backdrop-filter: blur(16px);
 }
 
+/* Structural placement for the AJAX forms and shared message. */
+.ajax-toast {
+    position: fixed;
+    z-index: 40;
+    right: 1rem;
+    bottom: 1rem;
+    width: min(24rem, calc(100vw - 2rem));
+}
+
+.ajax-toast[hidden] {
+    display: none;
+}
+
+.ajax-toast .message {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.ajax-toast .message--error {
+    border-color: rgba(180, 35, 24, 0.25);
+    background: rgba(255, 242, 244, 0.94);
+    color: #8c3441;
+}
+
+.form-modal {
+    box-sizing: border-box;
+    width: min(44rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
+    padding: 1.25rem;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-large);
+    background: #fff9fb;
+    color: var(--text-primary);
+    box-shadow: 0 1.5rem 4rem rgba(43, 35, 47, 0.2);
+}
+
+.form-modal::backdrop {
+    background: rgba(43, 35, 47, 0.5);
+}
+
+.form-modal__header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.form-modal__header h2 {
+    margin: 0;
+}
+
+.form-modal .project-form {
+    margin-top: 1rem;
+}
+
 
 /* Delete modal */
 

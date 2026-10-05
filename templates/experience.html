@@ -45,6 +45,7 @@
 
                     {% if user.is_superuser %}
                         <a
+                            id="experience-create-link"
                             href="{% url 'main:create_experience' %}"
                             class="button button-primary project-add-button"
                         >
@@ -124,6 +125,77 @@
                 {% endif %}
             </div>
         </section>
+
+        {% if user.is_superuser %}
+            <dialog
+                id="experience-create-modal"
+                class="form-modal"
+                aria-labelledby="experience-create-title"
+                aria-modal="true"
+            >
+                <div class="form-modal__header">
+                    <h2 id="experience-create-title">Add a new experience.</h2>
+                    <button type="button" class="button button-quiet" data-close-modal aria-label="Close">&times;</button>
+                </div>
+                <form
+                    id="experience-create-form"
+                    method="post"
+                    action="{% url 'main:create_experience' %}"
+                    class="project-form experience-form glass-surface"
+                    novalidate
+                >
+                    {% csrf_token %}
+                    {% for field in create_form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+                            <p class="form-error" data-error-for="{{ field.name }}" role="alert" hidden></p>
+                        </div>
+                    {% endfor %}
+                    <p class="form-error" data-form-error role="alert" hidden></p>
+                    <div class="form-actions">
+                        <button type="button" class="button button-quiet" data-close-modal>Cancel</button>
+                        <button type="submit" class="button button-primary">Add Experience</button>
+                    </div>
+                </form>
+            </dialog>
+        {% endif %}
+
+        {% if can_edit_experience %}
+            <dialog
+                id="experience-edit-modal"
+                class="form-modal"
+                aria-labelledby="experience-edit-title"
+                aria-modal="true"
+            >
+                <div class="form-modal__header">
+                    <h2 id="experience-edit-title">Edit this experience.</h2>
+                    <button type="button" class="button button-quiet" data-close-modal aria-label="Close">&times;</button>
+                </div>
+                <form
+                    id="experience-edit-form"
+                    method="post"
+                    class="project-form experience-form glass-surface"
+                    novalidate
+                >
+                    {% csrf_token %}
+                    {% for field in edit_form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+                            <p class="form-error" data-error-for="{{ field.name }}" role="alert" hidden></p>
+                        </div>
+                    {% endfor %}
+                    <p class="form-error" data-form-error role="alert" hidden></p>
+                    <div class="form-actions">
+                        <button type="button" class="button button-quiet" data-close-modal>Cancel</button>
+                        <button type="submit" class="button button-primary">Save Changes</button>
+                    </div>
+                </form>
+            </dialog>
+        {% endif %}
     </main>
     <script>
         const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
@@ -257,6 +329,8 @@
                 ? `<a
                     href="${buildUrl(experienceEditUrlTemplate, experienceId)}"
                     class="button button-secondary"
+                    data-action="edit-experience"
+                    data-experience-id="${experienceId}"
                 >Edit</a>`
                 : "";
 
@@ -302,8 +376,11 @@
             `;
         }
 
+        let experiencesById = new Map();
+
         async function refreshExperiences() {
             const experiences = await getExperiences();
+            experiencesById = new Map(experiences.map((item) => [item.pk, item]));
 
             const categoryLists =
                 document.querySelectorAll("[data-experience-category]");
@@ -343,7 +420,119 @@
             });
         }
 
+        function clearExperienceFormErrors(form) {
+            form.querySelectorAll("[data-error-for], [data-form-error]").forEach((node) => {
+                node.textContent = "";
+                node.hidden = true;
+            });
+            form.querySelectorAll("[aria-invalid]").forEach((field) => {
+                field.removeAttribute("aria-invalid");
+            });
+        }
+
+        function showExperienceFormErrors(form, errors) {
+            for (const [name, details] of Object.entries(errors)) {
+                const message = details.map((detail) => detail.message).join(" ");
+                const target = [...form.querySelectorAll("[data-error-for]")]
+                    .find((node) => node.dataset.errorFor === name)
+                    ?? form.querySelector("[data-form-error]");
+                target.textContent = message;
+                target.hidden = false;
+                const field = form.elements.namedItem(name);
+                if (field) field.setAttribute("aria-invalid", "true");
+            }
+        }
+
+        function attachExperienceAjaxForm(modal, form, successTitle) {
+            if (!modal || !form || typeof modal.showModal !== "function") return;
+            const submitButton = form.querySelector('[type="submit"]');
+            modal.querySelectorAll("[data-close-modal]").forEach((button) => {
+                button.addEventListener("click", () => modal.close());
+            });
+            modal.addEventListener("close", () => {
+                form.reset();
+                clearExperienceFormErrors(form);
+            });
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                if (submitButton.disabled) return;
+                clearExperienceFormErrors(form);
+                submitButton.disabled = true;
+                try {
+                    const response = await fetch(form.action, {
+                        method: "POST",
+                        body: new FormData(form),
+                        headers: {
+                            "X-CSRFToken": getCookie("csrftoken"),
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                    });
+                    const data = await response.json();
+                    if (response.status === 400 && data.errors) {
+                        showExperienceFormErrors(form, data.errors);
+                        return;
+                    }
+                    if (!response.ok || !data.success) {
+                        throw new Error(`Experience form failed with status ${response.status}`);
+                    }
+                    modal.close();
+                    await refreshExperiences();
+                    showToast(successTitle, data.message, "success");
+                } catch (error) {
+                    console.error("Error saving experience:", error);
+                    showToast("Could not save experience", "Please try again.", "error");
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+        }
+
+        const experienceCreateLink = document.getElementById("experience-create-link");
+        const experienceCreateModal = document.getElementById("experience-create-modal");
+        const experienceCreateForm = document.getElementById("experience-create-form");
+        attachExperienceAjaxForm(experienceCreateModal, experienceCreateForm, "Experience added");
+        if (experienceCreateLink && experienceCreateModal && typeof experienceCreateModal.showModal === "function") {
+            experienceCreateLink.addEventListener("click", (event) => {
+                event.preventDefault();
+                experienceCreateModal.showModal();
+                experienceCreateForm.elements.namedItem("title").focus();
+            });
+            experienceCreateModal.addEventListener("close", () => experienceCreateLink.focus());
+        }
+
+        const experienceEditModal = document.getElementById("experience-edit-modal");
+        const experienceEditForm = document.getElementById("experience-edit-form");
+        attachExperienceAjaxForm(experienceEditModal, experienceEditForm, "Experience updated");
+
+        function formatModalDate(value) {
+            if (!value) return "";
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 16);
+        }
+
+        function populateExperienceEditForm(experience) {
+            const fields = experience.fields;
+            for (const name of ["title", "description", "category", "thumbnail"]) {
+                experienceEditForm.elements.namedItem(name).value = fields[name] ?? "";
+            }
+            for (const name of ["started_at", "ended_at"]) {
+                experienceEditForm.elements.namedItem(name).value = formatModalDate(fields[name]);
+            }
+            experienceEditForm.action = buildUrl(experienceEditUrlTemplate, experience.pk);
+            clearExperienceFormErrors(experienceEditForm);
+        }
+
         document.querySelector(".experience-grid").addEventListener("click", async (event) => {
+            const editLink = event.target.closest('a[data-action="edit-experience"]');
+            if (editLink && experienceEditModal && typeof experienceEditModal.showModal === "function") {
+                const experience = experiencesById.get(editLink.dataset.experienceId);
+                if (!experience) return;
+                event.preventDefault();
+                populateExperienceEditForm(experience);
+                experienceEditModal.showModal();
+                experienceEditForm.elements.namedItem("title").focus();
+                return;
+            }
             const button = event.target.closest("button[data-action]");
             if (!button) return;
 
@@ -355,16 +544,19 @@
                 } catch (error) {
                     console.error("Error starring experience:", error);
                     button.disabled = false;
+                    showToast("Could not update star", "Please try again.", "error");
                 }
             } else if (button.dataset.action === "delete-experience") {
                 if (!window.confirm(`Delete "${button.dataset.experienceTitle}"?`)) return;
                 button.disabled = true;
                 try {
-                    await postAction(buildUrl(experienceDeleteUrlTemplate, button.dataset.experienceId));
+                    const data = await postAction(buildUrl(experienceDeleteUrlTemplate, button.dataset.experienceId));
                     await refreshExperiences();
+                    showToast("Experience deleted", data.message, "success");
                 } catch (error) {
                     console.error("Error deleting experience:", error);
                     button.disabled = false;
+                    showToast("Could not delete experience", "Please try again.", "error");
                 }
             }
         });

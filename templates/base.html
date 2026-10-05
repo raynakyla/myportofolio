@@ -61,6 +61,27 @@
     </div>
 {% endif %}
 
+    <div id="ajax-toast" class="ajax-toast" role="status" aria-live="polite" hidden>
+        <div id="ajax-toast-surface" class="message">
+            <strong id="ajax-toast-title"></strong>
+            <span id="ajax-toast-message"></span>
+        </div>
+    </div>
+    <script>
+        let ajaxToastTimer;
+        window.showToast = function (title, message, type = "normal", duration = 3000) {
+            const toast = document.getElementById("ajax-toast");
+            if (!toast) return;
+            document.getElementById("ajax-toast-title").textContent = title;
+            document.getElementById("ajax-toast-message").textContent = message;
+            document.getElementById("ajax-toast-surface").className =
+                `message message--${["success", "error"].includes(type) ? type : "normal"}`;
+            toast.hidden = false;
+            clearTimeout(ajaxToastTimer);
+            ajaxToastTimer = setTimeout(() => { toast.hidden = true; }, duration);
+        };
+    </script>
+
     {% block content %}
     {% endblock content %}
 

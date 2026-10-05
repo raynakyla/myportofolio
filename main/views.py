@@ -126,6 +126,14 @@ def show_experience(request):
             request.user.is_superuser or is_editor(request.user)
         ),
     }
+    if request.user.is_superuser:
+        context["create_form"] = ExperienceForm(
+            auto_id="id_experience_create_%s"
+        )
+    if context["can_edit_experience"]:
+        context["edit_form"] = ExperienceForm(
+            auto_id="id_experience_edit_%s"
+        )
 
     return render(request, "experience.html", context)
 
@@ -137,13 +145,19 @@ def create_experience(request):
 
     form = ExperienceForm(request.POST if request.method == "POST" else None)
 
-    if request.method == "POST" and form.is_valid():
-        experience = form.save()
-        messages.success(
-            request,
-            f'"{experience.title}" has been added successfully.',
-        )
-        return redirect("main:show_experience")
+    if request.method == "POST":
+        if form.is_valid():
+            experience = form.save()
+            message = f'"{experience.title}" has been added successfully.'
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "message": message})
+            messages.success(request, message)
+            return redirect("main:show_experience")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(
+                {"success": False, "errors": form.errors.get_json_data()},
+                status=400,
+            )
 
     context = {
         "name": PORTFOLIO_OWNER,
@@ -163,13 +177,19 @@ def update_experience(request, experience_id):
         instance=experience,
     )
 
-    if request.method == "POST" and form.is_valid():
-        updated_experience = form.save()
-        messages.success(
-            request,
-            f'"{updated_experience.title}" has been updated successfully.',
-        )
-        return redirect("main:show_experience")
+    if request.method == "POST":
+        if form.is_valid():
+            updated_experience = form.save()
+            message = f'"{updated_experience.title}" has been updated successfully.'
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "message": message})
+            messages.success(request, message)
+            return redirect("main:show_experience")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(
+                {"success": False, "errors": form.errors.get_json_data()},
+                status=400,
+            )
 
     context = {
         "name": PORTFOLIO_OWNER,
@@ -281,6 +301,8 @@ def show_projects(request):
         "project_list": projects,
         "title_query": title_query,
     }
+    if request.user.is_superuser:
+        context["create_form"] = ProjectForm(auto_id="id_project_create_%s")
 
     return render(request, "projects.html", context)
 
@@ -291,15 +313,19 @@ def create_project(request):
     
     form = ProjectForm(request.POST or None)
 
-    if request.method == "POST" and form.is_valid():
-        form.save()
-
-        messages.success(
-            request,
-            "Your new project has been added successfully!",
-        )
-
-        return redirect("main:show_projects")
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            message = "Your new project has been added successfully!"
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "message": message})
+            messages.success(request, message)
+            return redirect("main:show_projects")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(
+                {"success": False, "errors": form.errors.get_json_data()},
+                status=400,
+            )
 
     context = {
         "name": PORTFOLIO_OWNER,
