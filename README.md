@@ -209,3 +209,45 @@ Setelah seluruh perubahan dilakukan, saya melakukan pengecekan dengan:
 ```bash
 python manage.py check
 python manage.py test
+```
+
+## Refleksi Tugas 5
+
+### 1. Jelaskan apa itu debouncing dan mengapa teknik ini penting diterapkan pada fitur pencarian yang menggunakan AJAX!
+
+Debouncing itu teknik untuk “nahan” sebuah fungsi supaya tidak langsung dijalankan setiap kali ada event yang terjadi berkali-kali dalam waktu dekat.
+
+Contohnya di fitur search pakai AJAX. Kalau user ngetik:
+
+`portfolio`
+
+tanpa debouncing, setiap huruf bisa langsung memicu request baru:
+
+`p` → request  
+`po` → request  
+`por` → request  
+`port` → request  
+dan seterusnya.
+
+Jadinya server bisa menerima terlalu banyak request padahal user sebenarnya belum selesai mengetik.
+
+Dengan debouncing, kita kasih sedikit jeda, misalnya 300–500 ms. Request baru dikirim kalau user sudah berhenti mengetik selama jeda tersebut.
+
+Menurut saya ini penting karena:
+- jumlah request ke server jadi lebih sedikit,
+- pencarian jadi lebih efisien,
+- server tidak menerima request yang sebenarnya tidak perlu,
+- dan pengalaman user juga terasa lebih smooth.
+
+Jadi intinya, debouncing membantu supaya fitur search AJAX tidak terlalu “buru-buru” mengirim request setiap ada satu karakter baru.
+
+---
+
+### 2. Jelaskan fungsi dari penggunaan `await` ketika kita menggunakan `fetch()`! Apa yang akan terjadi jika kita tidak menggunakan `await`?
+
+`fetch()` itu bersifat asynchronous, jadi hasilnya tidak langsung tersedia saat fungsi dipanggil.
+
+Contohnya:
+
+```javascript
+const response = await fetch("/api/projects/");
