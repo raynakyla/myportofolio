@@ -126,6 +126,41 @@
         </section>
     </main>
     <script>
+        const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+        const isSuperuser = {{ user.is_superuser|yesno:"true,false" }};
+        const canEditExperience = {{ can_edit_experience|yesno:"true,false" }};
+        const experienceStarUrlTemplate =
+            "{% url 'main:toggle_experience_star' '00000000-0000-0000-0000-000000000000' %}";
+        const experienceDeleteUrlTemplate =
+            "{% url 'main:delete_experience' '00000000-0000-0000-0000-000000000000' %}";
+        const experienceEditUrlTemplate =
+            "{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}";
+
+        function buildUrl(template, id) {
+            return template.replace("00000000-0000-0000-0000-000000000000", id);
+        }
+
+        function getCookie(name) {
+            const cookie = document.cookie.split(";")
+                .map((part) => part.trim())
+                .find((part) => part.startsWith(`${name}=`));
+            return cookie ? decodeURIComponent(cookie.substring(name.length + 1)) : null;
+        }
+
+        async function postAction(url) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+            return await response.json();
+        }
+
         async function getExperiences() {
             try {
                 const response = await fetch(
@@ -147,6 +182,10 @@
             const element = document.createElement("div");
             element.textContent = value ?? "";
             return element.innerHTML;
+        }
+
+        function escapeAttribute(value) {
+            return escapeHTML(value).replaceAll('"', "&quot;").replaceAll("'", "&#39;");
         }
 
         function formatExperienceDate(dateValue) {
@@ -172,8 +211,8 @@
             const thumbnail = fields.thumbnail
                 ? `
                     <img
-                        src="${escapeHTML(fields.thumbnail)}"
-                        alt="Preview of ${title}"
+                        src="${escapeAttribute(fields.thumbnail)}"
+                        alt="Preview of ${escapeAttribute(fields.title)}"
                         class="experience-thumbnail"
                         loading="lazy"
                         width="480"
@@ -200,6 +239,37 @@
                     : "finished";
             }
 
+            const starButton = `
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    data-action="star-experience"
+                    data-experience-id="${experienceId}"
+                    ${isAuthenticated ? "" : 'disabled title="Log in to star this experience"'}
+                >
+                    <span aria-hidden="true">${fields.is_starred ? "&#9733;" : "&#9734;"}</span>
+                    <span>${fields.is_starred ? "Starred" : "Star"}</span>
+                    <span>${fields.star_count ?? 0}</span>
+                </button>
+            `;
+
+            const editButton = canEditExperience
+                ? `<a
+                    href="${buildUrl(experienceEditUrlTemplate, experienceId)}"
+                    class="button button-secondary"
+                >Edit</a>`
+                : "";
+
+            const deleteButton = isSuperuser
+                ? `<button
+                    type="button"
+                    class="button button-danger-outline"
+                    data-action="delete-experience"
+                    data-experience-id="${experienceId}"
+                    data-experience-title="${escapeAttribute(fields.title)}"
+                >Delete</button>`
+                : "";
+
             return `
                 <li
                     class="experience-item"
@@ -224,6 +294,9 @@
                     </p>
 
                     <div class="experience-actions">
+                        ${starButton}
+                        ${editButton}
+                        ${deleteButton}
                     </div>
                 </li>
             `;
@@ -269,6 +342,32 @@
                     .join("");
             });
         }
+
+        document.querySelector(".experience-grid").addEventListener("click", async (event) => {
+            const button = event.target.closest("button[data-action]");
+            if (!button) return;
+
+            if (button.dataset.action === "star-experience") {
+                button.disabled = true;
+                try {
+                    await postAction(buildUrl(experienceStarUrlTemplate, button.dataset.experienceId));
+                    await refreshExperiences();
+                } catch (error) {
+                    console.error("Error starring experience:", error);
+                    button.disabled = false;
+                }
+            } else if (button.dataset.action === "delete-experience") {
+                if (!window.confirm(`Delete "${button.dataset.experienceTitle}"?`)) return;
+                button.disabled = true;
+                try {
+                    await postAction(buildUrl(experienceDeleteUrlTemplate, button.dataset.experienceId));
+                    await refreshExperiences();
+                } catch (error) {
+                    console.error("Error deleting experience:", error);
+                    button.disabled = false;
+                }
+            }
+        });
 
         document.addEventListener(
             "DOMContentLoaded",

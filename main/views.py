@@ -1,8 +1,10 @@
+import json
 from django.contrib import messages
 from django.core import serializers
 from django.db.models import BooleanField, Count, Exists, OuterRef, Value
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
 from main.forms import ExperienceForm, ProjectForm
@@ -18,7 +20,6 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 from django.contrib.auth.models import Group, User
-
 
 # Create your views here.
 
@@ -83,6 +84,7 @@ def show_main(request):
     return render(request, "main.html", context)
 
 
+@ensure_csrf_cookie
 def show_experience(request):
     experiences_query = Experience.objects.order_by(
         "category", "-started_at", "title"
@@ -187,12 +189,19 @@ def delete_experience(request, experience_id):
     experience = get_object_or_404(Experience, pk=experience_id)
     experience_title = experience.title
     experience.delete()
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f'"{experience_title}" has been deleted successfully.',
+            }
+        )
+
     messages.success(
         request,
         f'"{experience_title}" has been deleted successfully.',
     )
     return redirect("main:show_experience")
-
 
 def get_experiences_json(request):
     experiences = Experience.objects.order_by(
@@ -204,38 +213,68 @@ def get_experiences_json(request):
         "json",
         experiences,
         fields=(
-            "title", "description", "category", "thumbnail", "started_at", "ended_at"
+            "title", "description", "category", "thumbnail", "started_at", "ended_at",
         ),
         use_natural_foreign_keys=True,
     )
-    return HttpResponse(experiences_json, content_type="application/json")
+
+    serialized_experiences = json.loads(experiences_json)
+
+    for serialized_experience, experience in zip(
+        serialized_experiences,
+        experiences,
+    ):
+        serialized_experience["fields"]["is_ongoing"] = experience.is_ongoing
+        serialized_experience["fields"]["star_count"] = (
+            experience.starred_by.count()
+        )
+
+        serialized_experience["fields"]["is_starred"] = (
+            request.user.is_authenticated
+            and experience.starred_by.filter(
+                pk=request.user.pk
+            ).exists()
+        )
+
+    return JsonResponse(
+        serialized_experiences,
+        safe=False,
+    )
 
 
 @login_required(login_url="/login/")
 @require_POST
 def toggle_experience_star(request, experience_id):
-    experience = get_object_or_404(Experience, pk=experience_id)
+    experience = get_object_or_404(
+        Experience,
+        pk=experience_id,
+    )
+
     if experience.starred_by.filter(pk=request.user.pk).exists():
         experience.starred_by.remove(request.user)
+        is_starred = False
     else:
         experience.starred_by.add(request.user)
+        is_starred = True
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "success": True,
+                "is_starred": is_starred,
+                "star_count": experience.starred_by.count(),
+            }
+        )
+
     return redirect("main:show_experience")
 
 
+@ensure_csrf_cookie
 def show_projects(request):
-    json_response = get_projects_json(request)
-
-    serialized_projects = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-
-    projects = [
-        serialized_project.object
-        for serialized_project in serialized_projects
-    ]
-
     title_query = request.GET.get("title", "").strip()
+    projects = Project.objects.all()
+    if title_query:
+        projects = projects.filter(title__icontains=title_query)
 
     context = {
         "name": PORTFOLIO_OWNER,
@@ -287,12 +326,30 @@ def get_projects_json(request):
         use_natural_foreign_keys=True,
     )
 
-    return HttpResponse(
-        projects_json,
-        content_type="application/json",
+    serialized_projects = json.loads(projects_json)
+
+    for serialized_project, project in zip(
+        serialized_projects,
+        projects,
+    ):
+        serialized_project["fields"]["star_count"] = (
+            project.starred_by.count()
+        )
+
+        serialized_project["fields"]["is_starred"] = (
+            request.user.is_authenticated
+            and project.starred_by.filter(
+                pk=request.user.pk
+            ).exists()
+        )
+
+    return JsonResponse(
+        serialized_projects,
+        safe=False,
     )
 
 @login_required(login_url="/login/")
+@require_POST
 def delete_project(request, project_id):
     if not request.user.is_superuser:
         raise PermissionDenied
@@ -302,15 +359,21 @@ def delete_project(request, project_id):
         pk=project_id,
     )
 
-    if request.method == "POST":
-        project_title = project.title
-        project.delete()
+    project_title = project.title
+    project.delete()
 
-        messages.success(
-            request,
-            f'"{project_title}" has been deleted successfully.',
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "success": True,
+                "message": f'"{project_title}" has been deleted successfully.',
+            }
         )
 
+    messages.success(
+        request,
+        f'"{project_title}" has been deleted successfully.',
+    )
     return redirect("main:show_projects")
 
 # tutorial 4 (biar nyarinya gampang)
@@ -380,8 +443,19 @@ def toggle_star(request, project_id):
 
     if request.user in project.starred_by.all():
         project.starred_by.remove(request.user)
+        is_starred = False
     else:
         project.starred_by.add(request.user)
+        is_starred = True
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(
+            {
+                "success": True,
+                "is_starred": is_starred,
+                "star_count": project.starred_by.count(),
+            }
+        )
 
     return redirect("main:show_projects")
 

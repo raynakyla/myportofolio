@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import timedelta
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -75,15 +75,10 @@ class MainTest(TestCase):
             "experience.html"
         )
 
-        self.assertContains(
-            response,
-            self.experience.title
-        )
-
-        self.assertContains(
-            response,
-            self.experience.description
-        )
+        experience = self.client.get(reverse("main:get_experiences_json")).json()[0]
+        self.assertEqual(experience["fields"]["title"], self.experience.title)
+        self.assertEqual(experience["fields"]["description"], self.experience.description)
+        self.assertTrue(experience["fields"]["is_ongoing"])
 
         self.assertContains(
             response,
@@ -123,6 +118,8 @@ class MainTest(TestCase):
         self.assertFalse(
             self.experience.is_ongoing
         )
+        experience = self.client.get(reverse("main:get_experiences_json")).json()[0]
+        self.assertFalse(experience["fields"]["is_ongoing"])
 
         self.assertContains(
             response,
@@ -213,21 +210,58 @@ class ProjectTest(TestCase):
         self.assertFormError(response.context["form"], "title", "This field is required.")
         self.assertFalse(Project.objects.filter(description="Missing a required title.").exists())
 
+    def test_ajax_project_star_and_delete_keep_csrf_and_permissions(self):
+        client = Client(enforce_csrf_checks=True)
+        regular = User.objects.create_user("reader", password="secret")
+        client.force_login(regular)
+        page = client.get(reverse("main:show_projects"))
+        self.assertContains(page, "const isAuthenticated = true;")
+        self.assertContains(page, "const isSuperuser = false;")
+        token = client.cookies["csrftoken"].value
+        star_url = reverse("main:toggle_star", args=[self.project.pk])
+        delete_url = reverse("main:delete_project", args=[self.project.pk])
+        self.assertEqual(client.post(star_url, HTTP_X_REQUESTED_WITH="XMLHttpRequest").status_code, 403)
+        starred = client.post(
+            star_url,
+            HTTP_X_CSRFTOKEN=token,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(starred.status_code, 200)
+        self.assertEqual(starred.json(), {
+            "success": True, "is_starred": True, "star_count": 1,
+        })
+        self.assertEqual(client.post(
+            delete_url,
+            HTTP_X_CSRFTOKEN=token,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        ).status_code, 403)
+
+        client.force_login(self.superuser)
+        self.assertEqual(client.get(delete_url).status_code, 405)
+        deleted = client.post(
+            delete_url,
+            HTTP_X_CSRFTOKEN=token,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertTrue(deleted.json()["success"])
+        self.assertFalse(Project.objects.filter(pk=self.project.pk).exists())
+
     def test_project_content_and_optional_fields_absent(self):
         response = self.client.get(reverse("main:show_projects"))
-        for value in [self.project.title, self.project.description,
-                      self.project.role, self.project.skills, "Product &amp; UX"]:
-            self.assertContains(response, value)
-        self.assertContains(response, 'class="project-placeholder"')
-        self.assertNotContains(response, "View Project")
-        self.assertNotContains(response, "Featured")
-        self.assertNotContains(response, 'class="project-thumbnail"')
+        self.assertContains(response, 'id="projects-grid"')
+        fields = self.client.get(reverse("main:get_projects_json")).json()[0]["fields"]
+        for field in ("title", "description", "role", "skills"):
+            self.assertEqual(fields[field], getattr(self.project, field))
+        self.assertFalse(fields["is_featured"])
+        self.assertEqual(fields["thumbnail"], "")
+        self.assertEqual(fields["project_url"], "")
 
     def test_empty_projects_page(self):
         Project.objects.all().delete()
         response = self.client.get(reverse("main:show_projects"))
         self.assertContains(response, "No projects have been added yet.")
-        self.assertNotContains(response, "View Project")
+        self.assertEqual(self.client.get(reverse("main:get_projects_json")).json(), [])
 
     def test_project_model(self):
         import uuid
@@ -245,12 +279,11 @@ class ProjectTest(TestCase):
         self.project.project_url = "https://example.com/project/"
         self.project.save()
         response = self.client.get(reverse("main:show_projects"))
-        self.assertContains(response, "Featured")
-        self.assertContains(response, "View Project")
-        self.assertContains(response, f'href="{self.project.project_url}"')
-        self.assertContains(response, f'src="{self.project.thumbnail}"')
-        self.assertContains(response, f'alt="Preview of {self.project.title}"')
-        self.assertNotContains(response, 'class="project-placeholder"')
+        self.assertContains(response, 'id="projects-grid"')
+        fields = self.client.get(reverse("main:get_projects_json")).json()[0]["fields"]
+        self.assertTrue(fields["is_featured"])
+        self.assertEqual(fields["project_url"], self.project.project_url)
+        self.assertEqual(fields["thumbnail"], self.project.thumbnail)
 
     def test_all_projects_displayed_in_featured_then_title_order(self):
         featured_z = Project.objects.create(
@@ -264,10 +297,11 @@ class ProjectTest(TestCase):
         response = self.client.get(reverse("main:show_projects"))
         self.assertEqual(list(response.context["project_list"]),
                          [featured_a, featured_z, self.project])
-        for project in [featured_a, featured_z, self.project]:
-            self.assertContains(response, project.title)
-        self.assertContains(response, "Web Development")
-        self.assertContains(response, "Creative Work")
+        projects = self.client.get(reverse("main:get_projects_json")).json()
+        self.assertEqual([item["pk"] for item in projects],
+                         [str(featured_a.pk), str(featured_z.pk), str(self.project.pk)])
+        self.assertEqual({item["fields"]["category"] for item in projects},
+                         {"creative", "web", "product"})
 
     def test_navigation_and_footer_on_all_pages(self):
         routes = ["main:show_main", "main:show_experience", "main:show_projects"]

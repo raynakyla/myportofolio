@@ -98,7 +98,9 @@ class ExperienceAuthorizationTests(TestCase):
         item = response.context["experience_list"][0]
         self.assertEqual(item.star_count, 2)
         self.assertTrue(item.is_starred)
-        self.assertContains(response, 'aria-label="Unstar A chapter"')
+        public_item = self.client.get(reverse("main:get_experiences_json")).json()[0]
+        self.assertEqual(public_item["fields"]["star_count"], 2)
+        self.assertTrue(public_item["fields"]["is_starred"])
 
         self.client.post(self.star_url)
         self.assertEqual(self.experience.starred_by.count(), 1)
@@ -141,24 +143,41 @@ class ExperienceAuthorizationTests(TestCase):
                 else:
                     self.client.logout()
                 response = self.client.get(self.page_url)
-                self.assertContains(response, self.experience.title)
-                self.assertContains(response, f'action="{self.star_url}"')
+                self.assertContains(response, 'class="experience-grid"')
+                self.assertContains(response, f'const isAuthenticated = {str(user is not None).lower()};')
+                self.assertContains(response, f'const isSuperuser = {str(can_delete).lower()};')
+                self.assertContains(response, f'const canEditExperience = {str(can_edit).lower()};')
                 self.assertEqual(
                     f'href="{self.create_url}"' in response.content.decode(),
                     can_create,
                 )
-                self.assertEqual(
-                    f'href="{self.update_url}"' in response.content.decode(),
-                    can_edit,
-                )
-                self.assertEqual(
-                    f'popovertarget="delete-experience-{self.experience.pk}"'
-                    in response.content.decode(),
-                    can_delete,
-                )
                 self.assertEqual(response.context["experience_list"][0].star_count, 1)
-                if user is None:
-                    self.assertContains(response, "Sign in to star A chapter")
+                item = self.client.get(reverse("main:get_experiences_json")).json()[0]
+                self.assertEqual(item["fields"]["title"], self.experience.title)
+                self.assertEqual(item["fields"]["star_count"], 1)
+                self.assertEqual(item["fields"]["is_starred"], user == self.owner)
+
+    def test_ajax_star_and_delete_return_json_with_redirect_fallback(self):
+        self.client.force_login(self.regular)
+        star = self.client.post(
+            self.star_url, HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(star.status_code, 200)
+        self.assertEqual(star.json(), {
+            "success": True, "is_starred": True, "star_count": 1,
+        })
+        self.assertEqual(self.client.post(
+            self.delete_url, HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        ).status_code, 403)
+
+        self.client.force_login(self.owner)
+        deleted = self.client.post(
+            self.delete_url, HTTP_X_REQUESTED_WITH="XMLHttpRequest"
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertTrue(deleted.json()["success"])
+        self.assertIn(self.experience.title, deleted.json()["message"])
+        self.assertFalse(Experience.objects.filter(pk=self.experience.pk).exists())
 
     def test_public_json_excludes_starring_user_ids(self):
         self.experience.starred_by.add(self.regular)

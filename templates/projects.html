@@ -140,6 +140,38 @@
     </main>
 
     <script>
+        const isAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+        const isSuperuser = {{ user.is_superuser|yesno:"true,false" }};
+        const projectStarUrlTemplate =
+            "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}";
+        const projectDeleteUrlTemplate =
+            "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}";
+
+        function buildUrl(template, id) {
+            return template.replace("00000000-0000-0000-0000-000000000000", id);
+        }
+
+        function getCookie(name) {
+            const cookie = document.cookie.split(";")
+                .map((part) => part.trim())
+                .find((part) => part.startsWith(`${name}=`));
+            return cookie ? decodeURIComponent(cookie.substring(name.length + 1)) : null;
+        }
+
+        async function postAction(url) {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            });
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+            return await response.json();
+        }
+
         async function getProjects() {
             try {
                 const response = await fetch("{% url 'main:get_projects_json' %}");
@@ -159,6 +191,10 @@
             const element = document.createElement("div");
             element.textContent = value ?? "";
             return element.innerHTML;
+        }
+
+        function escapeAttribute(value) {
+            return escapeHTML(value).replaceAll('"', "&quot;").replaceAll("'", "&#39;");
         }
 
         function formatProjectCategory(category) {
@@ -186,8 +222,8 @@
                 ? `
                     <img
                         class="project-thumbnail"
-                        src="${escapeHTML(fields.thumbnail)}"
-                        alt="Preview of ${title}"
+                        src="${escapeAttribute(fields.thumbnail)}"
+                        alt="Preview of ${escapeAttribute(fields.title)}"
                         loading="lazy"
                         width="640"
                         height="360"
@@ -213,14 +249,40 @@
                 ? `
                     <a
                         class="button"
-                        href="${escapeHTML(fields.project_url)}"
+                        href="${escapeAttribute(fields.project_url)}"
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label="View Project: ${title} (opens in a new tab)"
+                        aria-label="View Project: ${escapeAttribute(fields.title)} (opens in a new tab)"
                     >
                         View Project
                         <span aria-hidden="true">&nearr;</span>
                     </a>
+                `
+                : "";
+
+            const starButton = `
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    data-action="star-project"
+                    data-project-id="${projectId}"
+                    ${isAuthenticated ? "" : 'disabled title="Log in to star this project"'}
+                >
+                    <span aria-hidden="true">${fields.is_starred ? "&#9733;" : "&#9734;"}</span>
+                    <span>${fields.is_starred ? "Starred" : "Star"}</span>
+                    <span>${fields.star_count ?? 0}</span>
+                </button>
+            `;
+
+            const deleteButton = isSuperuser
+                ? `
+                    <button
+                        type="button"
+                        class="button button-danger-outline"
+                        data-action="delete-project"
+                        data-project-id="${projectId}"
+                        data-project-title="${escapeAttribute(fields.title)}"
+                    >Delete</button>
                 `
                 : "";
 
@@ -263,6 +325,8 @@
 
                         <div class="project-card-actions">
                             ${projectLink}
+                            ${starButton}
+                            ${deleteButton}
                         </div>
                     </div>
                 </article>
@@ -333,6 +397,32 @@
                 .map(createProjectCard)
                 .join("");
         }
+
+        document.getElementById("projects-grid").addEventListener("click", async (event) => {
+            const button = event.target.closest("button[data-action]");
+            if (!button) return;
+
+            if (button.dataset.action === "star-project") {
+                button.disabled = true;
+                try {
+                    await postAction(buildUrl(projectStarUrlTemplate, button.dataset.projectId));
+                    await refreshProjects();
+                } catch (error) {
+                    console.error("Error starring project:", error);
+                    button.disabled = false;
+                }
+            } else if (button.dataset.action === "delete-project") {
+                if (!window.confirm(`Delete "${button.dataset.projectTitle}"?`)) return;
+                button.disabled = true;
+                try {
+                    await postAction(buildUrl(projectDeleteUrlTemplate, button.dataset.projectId));
+                    await refreshProjects();
+                } catch (error) {
+                    console.error("Error deleting project:", error);
+                    button.disabled = false;
+                }
+            }
+        });
 
         document.addEventListener("DOMContentLoaded", refreshProjects);
     </script>
