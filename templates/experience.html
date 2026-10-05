@@ -108,7 +108,7 @@
                                     class="experience-list"
                                     data-experience-category="{{ group.key }}"
                                 >
-                                    <li class="experience-category-empty">
+                                    <li class="experience-category-empty experience-category-empty--loading">
                                          Loading experiences...
                                     </li>
                                 </ul>
@@ -314,14 +314,15 @@
             const starButton = `
                 <button
                     type="button"
-                    class="button button-secondary"
+                    class="button button-secondary star-action ${fields.is_starred ? "star-action--active" : ""}"
                     data-action="star-experience"
                     data-experience-id="${experienceId}"
+                    aria-pressed="${Boolean(fields.is_starred)}"
                     ${isAuthenticated ? "" : 'disabled title="Log in to star this experience"'}
                 >
-                    <span aria-hidden="true">${fields.is_starred ? "&#9733;" : "&#9734;"}</span>
+                    <span class="star-action__icon" aria-hidden="true">${fields.is_starred ? "&#9733;" : "&#9734;"}</span>
                     <span>${fields.is_starred ? "Starred" : "Star"}</span>
-                    <span>${fields.star_count ?? 0}</span>
+                    <span class="star-action__count">${fields.star_count ?? 0}</span>
                 </button>
             `;
 
