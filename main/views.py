@@ -232,9 +232,8 @@ def show_projects(request):
         "name": PORTFOLIO_OWNER,
         "project_list": projects,
         "title_query": title_query,
+        "form": ProjectForm(),
     }
-    if request.user.is_superuser:
-        context["create_form"] = ProjectForm()
 
     return render(request, "projects.html", context)
 
