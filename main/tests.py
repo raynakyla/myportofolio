@@ -165,15 +165,15 @@ class ProjectTest(TestCase):
         ):
             self.assertContains(response, f'id="{element_id}"')
         self.assertContains(response, 'src="/static/js/projects.js"')
-        self.assertContains(response, reverse("main:get_projects_json"))
-        self.assertNotContains(response, "data-delete-url-template")
+        self.assertContains(response, reverse("api:project-list"))
+        self.assertNotContains(response, "data-detail-url-template")
         self.assertNotContains(response, 'id="project-create-modal"')
 
         self.client.force_login(self.superuser)
         response = self.client.get(reverse("main:show_projects"))
-        self.assertContains(response, "data-delete-url-template")
+        self.assertContains(response, "data-detail-url-template")
         self.assertContains(response, 'id="project-create-modal"')
-        self.assertContains(response, f'action="{reverse("main:create_project_ajax")}"')
+        self.assertContains(response, f'action="{reverse("api:project-list")}"')
 
     def test_projects_api_exposes_card_data_without_user_ids(self):
         regular = User.objects.create_user(username="reader", password="secret")

@@ -161,11 +161,11 @@
                 <div
                     id="projects-grid"
                     class="projects-grid"
-                    data-api-url="{% url 'main:get_projects_json' %}"
-                    data-star-url-template="{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}"
+                    data-api-url="{% url 'api:project-list' %}"
+                    data-star-url-template="{% url 'api:project-star' '00000000-0000-0000-0000-000000000000' %}"
                     data-csrf-token="{{ csrf_token }}"
                     data-is-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
-                    {% if user.is_superuser %}data-delete-url-template="{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
+                    {% if user.is_superuser %}data-detail-url-template="{% url 'api:project-detail' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
                     hidden
                 ></div>
 
@@ -347,9 +347,9 @@
                     <button type="button" class="project-create-modal__close" data-close-project-modal aria-label="Close add project form">&times;</button>
                 </div>
 
-                <form id="project-create-form" class="project-form project-create-form" method="post" action="{% url 'main:create_project_ajax' %}" novalidate>
+                <form id="project-create-form" class="project-form project-create-form" method="post" action="{% url 'api:project-list' %}" novalidate>
                     {% csrf_token %}
-                    {% for field in create_form %}
+                    {% for field in form %}
                         <div class="form-group">
                             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                             {{ field }}
