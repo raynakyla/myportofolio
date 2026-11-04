@@ -12,4 +12,9 @@ urlpatterns = [
         api_views.project_detail,
         name="project-detail",
     ),
+    path(
+        "projects/<uuid:project_id>/star/",
+        api_views.project_star,
+        name="project-star",
+    ),
 ]
