@@ -130,7 +130,7 @@
                     data-is-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
                     data-is-owner="{% if user.is_superuser %}true{% else %}false{% endif %}"
                     {% if can_edit_experience %}data-edit-url-template="{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
-                    {% if user.is_superuser %}data-detail-url-template="{% url 'api:experience-detail' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
+                    {% if can_edit_experience %}data-detail-url-template="{% url 'api:experience-detail' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
                 >
                     {% for group in experience_groups %}
                         <article
@@ -204,6 +204,9 @@
                                                     <a
                                                         href="{% url 'main:update_experience' experience.id %}"
                                                         class="button button-secondary"
+                                                        data-experience-edit
+                                                        aria-haspopup="dialog"
+                                                        aria-controls="experience-edit-modal"
                                                         aria-label="Edit {{ experience.title }}"
                                                     >
                                                         Edit
@@ -289,6 +292,59 @@
                             <div class="form-actions">
                                 <button type="button" class="button button-quiet" data-close-experience-modal>Cancel</button>
                                 <button id="experience-create-submit" type="submit" class="button button-primary project-create-submit">Add Experience</button>
+                            </div>
+                        </form>
+                    </dialog>
+                {% endif %}
+
+                {% if can_edit_experience %}
+                    <dialog id="experience-edit-modal" class="project-create-modal" aria-labelledby="experience-edit-title" aria-describedby="experience-edit-description">
+                        <div class="project-create-modal__header">
+                            <div>
+                                <p class="eyebrow">Refine a chapter</p>
+                                <h2 id="experience-edit-title">Edit this experience.</h2>
+                                <p id="experience-edit-description">Update the details of this chapter. Times are shown in UTC.</p>
+                            </div>
+                            <button type="button" class="project-create-modal__close" data-close-experience-edit aria-label="Close edit experience form">&times;</button>
+                        </div>
+
+                        <form id="experience-edit-form" class="project-form experience-form project-create-form" method="post" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="experience-edit-title-input">Experience Title</label>
+                                <input id="experience-edit-title-input" class="form-control" type="text" name="title" maxlength="255" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-edit-description-input">Description</label>
+                                <textarea id="experience-edit-description-input" class="form-control" name="description" rows="5" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-edit-category">Category</label>
+                                <select id="experience-edit-category" class="form-control" name="category">
+                                    {% for group in experience_groups %}
+                                        <option value="{{ group.key }}">{{ group.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-edit-thumbnail">Thumbnail URL</label>
+                                <input id="experience-edit-thumbnail" class="form-control" type="url" name="thumbnail" placeholder="https://example.com/experience.jpg">
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-edit-started">Start Date and Time</label>
+                                <input id="experience-edit-started" class="form-control" type="datetime-local" name="started_at" aria-describedby="experience-edit-started-help">
+                                <p id="experience-edit-started-help" class="form-help">Optional. Enter the actual start time in UTC, or leave blank if unknown.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-edit-ended">End Date and Time</label>
+                                <input id="experience-edit-ended" class="form-control" type="datetime-local" name="ended_at" aria-describedby="experience-edit-ended-help">
+                                <p id="experience-edit-ended-help" class="form-help">Enter the end time in UTC. Leave blank if this experience is still ongoing.</p>
+                            </div>
+                            <p id="experience-edit-error-general" class="form-error project-create-form__general-error" role="alert" hidden></p>
+                            <div class="form-actions">
+                                <a id="experience-edit-fallback" href="{% url 'main:show_experience' %}" class="button button-quiet">Open full edit page</a>
+                                <button type="button" class="button button-quiet" data-close-experience-edit>Cancel</button>
+                                <button id="experience-edit-submit" type="submit" class="button button-primary project-create-submit">Save Changes</button>
                             </div>
                         </form>
                     </dialog>

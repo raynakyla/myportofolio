@@ -68,6 +68,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }).format(date);
     }
 
+    function utcInputValue(value) {
+        if (!value) return '';
+        const withZone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
+        const date = new Date(withZone);
+        return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 16);
+    }
+
+    function datePatchValue(value) {
+        return value ? `${value}${value.length === 16 ? ':00' : ''}Z` : null;
+    }
+
+    function matchesSearch(experience, query) {
+        return experience.title.toLocaleLowerCase().includes(query.toLocaleLowerCase());
+    }
+
+    function compareExperiences(left, right) {
+        if (left.category !== right.category) return left.category < right.category ? -1 : 1;
+        const leftStart = left.started_at ? Date.parse(left.started_at) : -Infinity;
+        const rightStart = right.started_at ? Date.parse(right.started_at) : -Infinity;
+        if (leftStart !== rightStart) return rightStart - leftStart;
+        return left.title.localeCompare(right.title) || left.id.localeCompare(right.id);
+    }
+
     function errorMessage(result, fallback) {
         if (!result || typeof result !== 'object') return fallback;
         if (typeof result.detail === 'string') return result.detail;
@@ -97,6 +120,38 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMutationError(response, result, fallback) {
         const title = response.status === 403 ? 'Permission denied' : 'Experience update failed';
         showToast(title, errorMessage(result, fallback), 'error');
+    }
+
+    function clearValidation(form, generalError) {
+        form.querySelectorAll('[data-api-error]').forEach(node => node.remove());
+        form.querySelectorAll('[aria-invalid]').forEach(field => {
+            field.removeAttribute('aria-invalid');
+            field.removeAttribute('aria-errormessage');
+        });
+        generalError.textContent = '';
+        generalError.hidden = true;
+    }
+
+    function showValidation(form, generalError, result, idPrefix) {
+        let firstInvalid = null;
+        for (const [name, details] of Object.entries(result)) {
+            const message = (Array.isArray(details) ? details : [details]).map(String).join(' ');
+            const field = form.elements.namedItem(name);
+            const group = field?.closest('.form-group');
+            if (!group) {
+                generalError.textContent = message;
+                generalError.hidden = false;
+                continue;
+            }
+            const fieldError = element('p', 'form-error', message);
+            fieldError.id = `${idPrefix}-error-${name}`;
+            fieldError.dataset.apiError = '';
+            group.append(fieldError);
+            field.setAttribute('aria-invalid', 'true');
+            field.setAttribute('aria-errormessage', fieldError.id);
+            if (!firstInvalid) firstInvalid = field;
+        }
+        firstInvalid?.focus();
     }
 
     function starControl(experience) {
@@ -161,6 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (grid.dataset.editUrlTemplate) {
             const edit = element('a', 'button button-secondary', 'Edit');
             edit.href = actionUrl(grid.dataset.editUrlTemplate, experience.id);
+            edit.dataset.experienceEdit = '';
+            edit.setAttribute('aria-haspopup', 'dialog');
+            edit.setAttribute('aria-controls', 'experience-edit-modal');
             edit.setAttribute('aria-label', `Edit ${experience.title}`);
             actions.append(edit);
         }
@@ -395,38 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let submitting = false;
         let opener = null;
 
-        function clearValidation() {
-            createForm.querySelectorAll('[data-api-error]').forEach(node => node.remove());
-            createForm.querySelectorAll('[aria-invalid]').forEach(field => {
-                field.removeAttribute('aria-invalid');
-                field.removeAttribute('aria-errormessage');
-            });
-            generalError.textContent = '';
-            generalError.hidden = true;
-        }
-
-        function showValidation(result) {
-            let firstInvalid = null;
-            for (const [name, details] of Object.entries(result)) {
-                const message = (Array.isArray(details) ? details : [details]).map(String).join(' ');
-                const field = createForm.elements.namedItem(name);
-                const group = field?.closest('.form-group');
-                if (!group) {
-                    generalError.textContent = message;
-                    generalError.hidden = false;
-                    continue;
-                }
-                const fieldError = element('p', 'form-error', message);
-                fieldError.id = `experience-create-error-${name}`;
-                fieldError.dataset.apiError = '';
-                group.append(fieldError);
-                field.setAttribute('aria-invalid', 'true');
-                field.setAttribute('aria-errormessage', fieldError.id);
-                if (!firstInvalid) firstInvalid = field;
-            }
-            firstInvalid?.focus();
-        }
-
         function setSubmitting(value) {
             submitting = value;
             createButton.disabled = value;
@@ -440,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof createModal.showModal !== 'function') return;
                 event.preventDefault();
                 opener = trigger;
-                clearValidation();
+                clearValidation(createForm, generalError);
                 createModal.showModal();
                 createForm.elements.namedItem('title').focus();
             });
@@ -453,14 +479,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         createModal.addEventListener('close', () => {
             createForm.reset();
-            clearValidation();
+            clearValidation(createForm, generalError);
             opener?.focus();
         });
 
         createForm.addEventListener('submit', async event => {
             event.preventDefault();
             if (submitting) return;
-            clearValidation();
+            clearValidation(createForm, generalError);
             setSubmitting(true);
             const formData = new FormData(createForm);
             const payload = {
@@ -474,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const { response, result } = await mutation(createForm.action, 'POST', payload);
                 if (response.status === 400 && result && typeof result === 'object') {
-                    showValidation(result);
+                    showValidation(createForm, generalError, result, 'experience-create');
                     showToast('Check experience details', errorMessage(result, 'Please correct the highlighted fields.'), 'error');
                     return;
                 }
@@ -488,6 +514,152 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('Experience added', `"${result.title}" has been added.`, 'success');
             } catch (fetchError) {
                 showToast('Could not add experience', 'Could not connect. Please try again.', 'error');
+            } finally {
+                setSubmitting(false);
+            }
+        });
+    }
+
+    const editModal = document.getElementById('experience-edit-modal');
+    if (editModal) {
+        const editForm = document.getElementById('experience-edit-form');
+        const editButton = document.getElementById('experience-edit-submit');
+        const editFallback = document.getElementById('experience-edit-fallback');
+        const generalError = document.getElementById('experience-edit-error-general');
+        const closeButtons = editModal.querySelectorAll('[data-close-experience-edit]');
+        const fieldNames = ['title', 'description', 'category', 'thumbnail', 'started_at', 'ended_at'];
+        let editingExperience = null;
+        let initialValues = {};
+        let editTrigger = null;
+        let opening = false;
+        let submitting = false;
+        let focusSearchAfterClose = false;
+
+        function populateEditForm(experience, trigger) {
+            editingExperience = experience;
+            editTrigger = trigger;
+            editForm.action = trigger.href;
+            editFallback.href = trigger.href;
+            for (const name of fieldNames) {
+                const field = editForm.elements.namedItem(name);
+                field.value = name === 'started_at' || name === 'ended_at'
+                    ? utcInputValue(experience[name])
+                    : String(experience[name] ?? '');
+                initialValues[name] = field.value;
+            }
+            clearValidation(editForm, generalError);
+        }
+
+        function setSubmitting(value) {
+            submitting = value;
+            editButton.disabled = value;
+            closeButtons.forEach(button => { button.disabled = value; });
+            editForm.setAttribute('aria-busy', String(value));
+        }
+
+        grid.addEventListener('click', async event => {
+            const trigger = event.target.closest('a[data-experience-edit]');
+            if (!trigger || !grid.contains(trigger) || typeof editModal.showModal !== 'function') return;
+            if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            if (opening) return;
+            const id = trigger.closest('[data-experience-id]')?.dataset.experienceId;
+            if (!id) return;
+            opening = true;
+            try {
+                const response = await fetch(actionUrl(grid.dataset.detailUrlTemplate, id), {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                });
+                const result = await response.json().catch(() => null);
+                if (!response.ok || !result) {
+                    showToast(
+                        'Could not open edit form',
+                        errorMessage(result, 'Could not load the latest experience details.'),
+                        'error',
+                    );
+                    return;
+                }
+                populateEditForm(result, trigger);
+                editModal.showModal();
+                editForm.elements.namedItem('title').focus();
+            } catch (fetchError) {
+                showToast('Could not open edit form', 'Could not connect. Please try again.', 'error');
+            } finally {
+                opening = false;
+            }
+        });
+
+        closeButtons.forEach(button => button.addEventListener('click', () => {
+            if (!submitting) editModal.close();
+        }));
+        editModal.addEventListener('cancel', event => {
+            if (submitting) event.preventDefault();
+        });
+        editFallback.addEventListener('click', event => {
+            if (submitting) event.preventDefault();
+        });
+        editModal.addEventListener('close', () => {
+            clearValidation(editForm, generalError);
+            editForm.reset();
+            const currentTrigger = [...grid.querySelectorAll('a[data-experience-edit]')]
+                .find(link => link.closest('[data-experience-id]')?.dataset.experienceId === editingExperience?.id);
+            const focusTarget = focusSearchAfterClose
+                ? searchInput
+                : currentTrigger || (editTrigger?.isConnected ? editTrigger : searchInput);
+            focusTarget.focus();
+            editingExperience = null;
+            initialValues = {};
+            editTrigger = null;
+            focusSearchAfterClose = false;
+        });
+
+        editForm.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (submitting || !editingExperience) return;
+            clearValidation(editForm, generalError);
+            const payload = {};
+            for (const name of fieldNames) {
+                const value = editForm.elements.namedItem(name).value;
+                if (value === initialValues[name]) continue;
+                if (name === 'started_at' || name === 'ended_at') payload[name] = datePatchValue(value);
+                else if (name === 'thumbnail') payload[name] = value.trim() || null;
+                else payload[name] = value;
+            }
+            if (Object.keys(payload).length === 0) {
+                editModal.close();
+                showToast('No changes to save', 'This experience is already up to date.');
+                return;
+            }
+
+            setSubmitting(true);
+            try {
+                const { response, result } = await mutation(
+                    actionUrl(grid.dataset.detailUrlTemplate, editingExperience.id), 'PATCH', payload,
+                );
+                if (response.status === 400 && result && typeof result === 'object') {
+                    showValidation(editForm, generalError, result, 'experience-edit');
+                    showToast('Check experience details', errorMessage(result, 'Please correct the highlighted fields.'), 'error');
+                    return;
+                }
+                if (!response.ok) {
+                    showMutationError(response, result, 'Could not save the experience. Please try again.');
+                    return;
+                }
+
+                const query = new URLSearchParams(window.location.search).get('title')?.trim() || '';
+                if (hasApiData) {
+                    experiences = experiences.filter(experience => experience.id !== result.id);
+                    if (!query || matchesSearch(result, query)) experiences.push(result);
+                    experiences.sort(compareExperiences);
+                    renderExperiences(query);
+                }
+                focusSearchAfterClose = true;
+                editModal.close();
+                showToast('Experience updated', `"${result.title}" has been saved.`, 'success');
+                loadExperiences(query);
+            } catch (fetchError) {
+                showToast('Could not save experience', 'Could not connect. Please try again.', 'error');
             } finally {
                 setSubmitting(false);
             }
