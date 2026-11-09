@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block meta %}
     <meta
@@ -6,6 +7,7 @@
         content="Experience portfolio of {{ name }}, a Computer Science student at Universitas Indonesia."
     >
     <title>Experience - {{ name }}</title>
+    <script src="{% static 'js/experiences.js' %}" defer></script>
 {% endblock meta %}
 
 {% block content %}
@@ -45,8 +47,11 @@
 
                     {% if user.is_superuser %}
                         <a
+                            id="experience-create-open"
                             href="{% url 'main:create_experience' %}"
                             class="button button-primary project-add-button"
+                            aria-haspopup="dialog"
+                            aria-controls="experience-create-modal"
                         >
                             Add Experience
                             <span aria-hidden="true">&nearr;</span>
@@ -56,25 +61,77 @@
                     {% endif %}
                 </div>
 
-                {% if not experience_list %}
-                    <div class="experience-empty-state glass-surface">
-                        <span aria-hidden="true">&plus;</span>
-                        <div>
-                            <h2>No experiences have been added yet.</h2>
-                            <p>Belum ada pengalaman yang ditambahkan.</p>
-                        </div>
-                        {% if user.is_superuser %}
-                            <a
-                                href="{% url 'main:create_experience' %}"
-                                class="button"
-                            >
-                                Add First Experience
-                            </a>
-                        {% endif %}
-                    </div>
-                {% endif %}
+                <form
+                    id="experience-search"
+                    class="project-search glass-surface"
+                    method="get"
+                    action="{% url 'main:show_experience' %}"
+                    role="search"
+                    hidden
+                >
+                    <label for="experience-search-input" class="sr-only">Search experiences by title</label>
+                    <input
+                        id="experience-search-input"
+                        class="project-search__input"
+                        type="search"
+                        name="title"
+                        placeholder="Search an experience by title..."
+                    >
+                    <button type="submit" class="button">Search</button>
+                    <a
+                        id="experience-search-clear"
+                        href="{% url 'main:show_experience' %}"
+                        class="button button-secondary"
+                        hidden
+                    >Clear</a>
+                </form>
 
-                <div class="experience-grid">
+                <div id="experience-loading" class="experience-empty-state glass-surface" role="status" hidden>
+                    <span aria-hidden="true">&#10022;</span>
+                    <div>
+                        <h2>Refreshing experiences...</h2>
+                        <p>The archive will be ready in a moment.</p>
+                    </div>
+                </div>
+
+                <div id="experience-error" class="experience-empty-state glass-surface" role="alert" hidden>
+                    <span aria-hidden="true">!</span>
+                    <div>
+                        <h2>Experiences could not load.</h2>
+                        <p>Showing the last available entries. Please try again.</p>
+                        <button id="experience-retry" type="button" class="button button-secondary">Try Again</button>
+                    </div>
+                </div>
+
+                <div id="experience-empty" class="experience-empty-state glass-surface" {% if experience_list %}hidden{% endif %}>
+                    <span aria-hidden="true">&plus;</span>
+                    <div>
+                        <h2 id="experience-empty-title">No experiences have been added yet.</h2>
+                        <p id="experience-empty-message">Belum ada pengalaman yang ditambahkan.</p>
+                    </div>
+                    {% if user.is_superuser %}
+                        <a
+                            id="experience-empty-add"
+                            href="{% url 'main:create_experience' %}"
+                            class="button"
+                            aria-haspopup="dialog"
+                            aria-controls="experience-create-modal"
+                        >Add First Experience</a>
+                    {% endif %}
+                </div>
+
+                <div
+                    id="experience-grid"
+                    class="experience-grid"
+                    data-api-url="{% url 'api:experience-list' %}"
+                    data-star-url-template="{% url 'api:experience-star' '00000000-0000-0000-0000-000000000000' %}"
+                    data-csrf-token="{{ csrf_token }}"
+                    data-login-url="{% url 'main:login' %}"
+                    data-is-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+                    data-is-owner="{% if user.is_superuser %}true{% else %}false{% endif %}"
+                    {% if can_edit_experience %}data-edit-url-template="{% url 'main:update_experience' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
+                    {% if user.is_superuser %}data-detail-url-template="{% url 'api:experience-detail' '00000000-0000-0000-0000-000000000000' %}"{% endif %}
+                >
                     {% for group in experience_groups %}
                         <article
                             class="experience-card experience-card--{{ group.modifier }}"
@@ -103,9 +160,9 @@
                             </header>
 
                             <div class="experience-list-wrap">
-                                <ul class="experience-list">
+                                <ul class="experience-list" data-experience-category="{{ group.key }}">
                                     {% for experience in group.items %}
-                                        <li class="experience-item">
+                                        <li class="experience-item" data-experience-id="{{ experience.id }}">
                                             {% if experience.thumbnail %}
                                                 <img
                                                     src="{{ experience.thumbnail }}"
@@ -177,10 +234,64 @@
                 </div>
 
                 {# Keep popovers outside the card's hover-controlled visibility. #}
+                <div id="experience-delete-modals">
+                    {% if user.is_superuser %}
+                        {% for experience in experience_list %}
+                            {% include "components/experience_delete_modal.html" with experience=experience %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
                 {% if user.is_superuser %}
-                    {% for experience in experience_list %}
-                        {% include "components/experience_delete_modal.html" with experience=experience %}
-                    {% endfor %}
+                    <dialog id="experience-create-modal" class="project-create-modal" aria-labelledby="experience-create-title">
+                        <div class="project-create-modal__header">
+                            <div>
+                                <p class="eyebrow">New chapter</p>
+                                <h2 id="experience-create-title">Add a new experience.</h2>
+                                <p>Capture the work, community, or milestone that made this chapter worth remembering.</p>
+                            </div>
+                            <button type="button" class="project-create-modal__close" data-close-experience-modal aria-label="Close add experience form">&times;</button>
+                        </div>
+
+                        <form id="experience-create-form" class="project-form experience-form project-create-form" method="post" action="{% url 'api:experience-list' %}" novalidate>
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="experience-create-title-input">Experience Title</label>
+                                <input id="experience-create-title-input" class="form-control" type="text" name="title" maxlength="255" placeholder="Head of Event Division" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-create-description">Description</label>
+                                <textarea id="experience-create-description" class="form-control" name="description" rows="5" placeholder="Describe what you did and learned." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-create-category">Category</label>
+                                <select id="experience-create-category" class="form-control" name="category">
+                                    {% for group in experience_groups %}
+                                        <option value="{{ group.key }}">{{ group.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-create-thumbnail">Thumbnail URL</label>
+                                <input id="experience-create-thumbnail" class="form-control" type="url" name="thumbnail" placeholder="https://example.com/experience.jpg">
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-create-started">Start Date and Time</label>
+                                <input id="experience-create-started" class="form-control" type="datetime-local" name="started_at" aria-describedby="experience-create-started-help">
+                                <p id="experience-create-started-help" class="form-help">Optional. Enter the actual start time in UTC, or leave blank if unknown.</p>
+                            </div>
+                            <div class="form-group">
+                                <label for="experience-create-ended">End Date and Time</label>
+                                <input id="experience-create-ended" class="form-control" type="datetime-local" name="ended_at" aria-describedby="experience-create-ended-help">
+                                <p id="experience-create-ended-help" class="form-help">Enter the end time in UTC. Leave blank if this experience is still ongoing.</p>
+                            </div>
+                            <p id="experience-create-error-general" class="form-error project-create-form__general-error" role="alert" hidden></p>
+                            <div class="form-actions">
+                                <button type="button" class="button button-quiet" data-close-experience-modal>Cancel</button>
+                                <button id="experience-create-submit" type="submit" class="button button-primary project-create-submit">Add Experience</button>
+                            </div>
+                        </form>
+                    </dialog>
                 {% endif %}
             </div>
         </section>

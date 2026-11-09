@@ -461,6 +461,18 @@ img {
     padding: clamp(3.5rem, 7vw, 6rem) 0 clamp(5rem, 10vw, 8rem);
 }
 
+.experience-section [hidden] {
+    display: none !important;
+}
+
+.experience-section a.project-star__button {
+    text-decoration: none;
+}
+
+#experience-retry {
+    margin-top: 0.75rem;
+}
+
 .section-intro {
     max-width: 720px;
     padding-left: clamp(0rem, 4vw, 3rem);
