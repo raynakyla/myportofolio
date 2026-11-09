@@ -126,9 +126,10 @@ ditulis ulang dalam audit lanjutan.
 
 Halaman Experience mempertahankan enam kelompok desain: Career,
 Organizations, Community, Competition, Personal Project, dan Certification.
-Halaman ini sekarang mengambil data langsung dari database, lalu
-mengelompokkannya untuk ditampilkan pada card yang sesuai. Endpoint JSON tetap
-tersedia secara terpisah. Fitur yang tersedia meliputi:
+Render awal mengambil data dari database sebagai fallback. Saat JavaScript aktif,
+daftar dan pencarian judul mengambil data dari API DRF, lalu menampilkannya pada
+enam card kategori yang sama. Endpoint JSON lama tetap tersedia secara terpisah.
+Fitur server-side yang tetap bisa dipakai meliputi:
 
 - melihat daftar dan empty state di `/experience/`;
 - menambah pengalaman di `/experience/add/`;
@@ -136,11 +137,23 @@ tersedia secara terpisah. Fitur yang tersedia meliputi:
 - menghapus pengalaman melalui form POST di `/experience/<uuid>/delete/`;
 - mengambil data JSON di `/api/experiences/`.
 
+API DRF Tugas 6 berada di `/api/v1/experiences/`:
+
+- `GET` untuk daftar dan pencarian `?title=`, serta `POST` untuk menambah Experience;
+- `GET`, `PUT`, `PATCH`, dan `DELETE` di `/api/v1/experiences/<uuid>/` untuk satu Experience;
+- `POST` di `/api/v1/experiences/<uuid>/star/` untuk star/unstar milik user yang sedang login.
+
+Di halaman Experience, tambah, edit dengan `PATCH`, star, dan hapus dapat dilakukan
+tanpa reload melalui API sesuai hak akses user. Route form lama tetap ada sebagai
+fallback. API Project dari Tutorial 7 tetap terpisah, dan Tugas 6 tidak mengubah
+model sehingga tidak memerlukan migration baru.
+
 Untuk memeriksa perubahan sebelum menjalankan server:
 
 ```powershell
 python manage.py check
 python manage.py makemigrations --check --dry-run
+python manage.py test main.tests_experience_api
 python manage.py test
 ```
 
@@ -209,3 +222,36 @@ Setelah seluruh perubahan dilakukan, saya melakukan pengecekan dengan:
 ```bash
 python manage.py check
 python manage.py test
+```
+
+### Tugas 6
+
+1. **Apa itu REST, kenapa JSON saja belum cukup, dan apa beda PUT dengan PATCH?**
+
+   REST adalah cara merancang API di sekitar resource, misalnya kumpulan Experience di `/api/v1/experiences/` dan satu Experience di `/api/v1/experiences/<uuid>/`. Operasinya memakai makna metode HTTP seperti `GET` untuk membaca, `POST` untuk membuat, `PUT` atau `PATCH` untuk mengubah, dan `DELETE` untuk menghapus. Request juga perlu bisa dipahami dari informasi yang dikirim saat itu, dengan status HTTP yang sesuai. JSON hanya format datanya. Endpoint lama `/api/experiences/` memang mengembalikan JSON, tetapi fakta itu saja belum menjelaskan cara membuat, mengubah, atau menghapus resource secara konsisten.
+
+   `PUT` dipakai untuk pembaruan lengkap: client mengirim representasi Experience yang ingin menggantikan data sebelumnya. `PATCH` cukup mengirim bagian yang berubah. Contohnya, kalau saya hanya mengganti judul "Career Design" menjadi "Product Designer", dialog Edit mengirim `PATCH` berisi `title` baru. Deskripsi dan tanggal yang tidak disentuh tidak perlu dikirim ulang. Kalau tanggal selesai sengaja dikosongkan, `ended_at` justru dikirim sebagai `null` supaya nilainya benar-benar dihapus.
+
+2. **Apa fungsi serializer DRF dibanding membuat dictionary untuk `JsonResponse` sendiri?**
+
+   `ExperienceSerializer` mengubah object Experience menjadi data respons API dan memeriksa input sebelum data disimpan. Field yang dibuka ditulis jelas: `id`, `title`, `description`, `category`, `thumbnail`, `started_at`, `ended_at`, `star_count`, dan `is_starred`. `id` serta dua nilai star bersifat read-only; relasi `starred_by` dan data User tidak ikut dibuka. Serializer juga membersihkan tag HTML dari judul dan deskripsi, menolak teks yang menjadi kosong, dan memastikan tanggal selesai tidak mendahului tanggal mulai, termasuk saat `PATCH` hanya mengirim salah satu tanggal.
+
+   Pada pendekatan dictionary manual seperti `get_projects_json` dari Tutorial 5, saya perlu memilih dan mengisi setiap nilai respons sendiri. Cara itu berguna untuk respons sederhana, tetapi validasi input, field read-only, dan konsistensi format respons perlu ditulis lagi secara terpisah. `ModelSerializer` membantu mengumpulkan aturan output dan input tersebut di satu tempat tanpa memakai `fields = "__all__"`.
+
+3. **Apa beda authentication dan authorization, serta kenapa permission harus dicek di server?**
+
+   Authentication menjawab "siapa user yang mengirim request?". Pada API ini, `SessionAuthentication` membaca sesi login Django. Authorization menjawab "aksi apa yang boleh dilakukan user itu?". Permission `IsPortfolioOwnerOrEditorOrReadOnly` membuat visitor boleh membaca daftar/detail, user biasa boleh membaca, anggota grup `Editor` boleh mengubah lewat `PUT`/`PATCH`, dan superuser boleh membuat, mengubah, serta menghapus. Endpoint star memakai `IsAuthenticated`, jadi semua user yang sudah login boleh star/unstar, sedangkan visitor tidak.
+
+   Menyembunyikan tombol Edit atau Delete di template hanya membantu tampilan sesuai role. User tetap bisa membuat request langsung ke `/api/v1/experiences/<uuid>/` dari browser atau alat lain. Karena itu, view API harus mengecek permission di server sebelum mengubah database; tombol tersembunyi bukan pengaman data.
+
+4. **Mengapa request yang mengubah data masih perlu CSRF saat memakai `SessionAuthentication`?**
+
+   Browser dapat mengirim cookie sesi secara otomatis. Tanpa pemeriksaan CSRF, halaman lain bisa mencoba memanfaatkan sesi user yang sedang login untuk mengirim request yang mengubah Experience. Karena itu, `POST`, `PUT`, `PATCH`, dan `DELETE` dari halaman Experience mengirim header `X-CSRFToken`, lalu DRF memeriksanya pada request yang memakai sesi.
+
+   Di test API, `APIClient(enforce_csrf_checks=True)` login lewat `.login()`, kemudian mencoba `POST` tanpa `X-CSRFToken`. Hasilnya HTTP 403 dan database tetap sama. `force_authenticate()` tidak bisa membuktikan perlindungan ini karena ia memasukkan user langsung ke request dan melewati alur login sesi serta pemeriksaan CSRF oleh `SessionAuthentication`.
+
+#### Penggunaan AI pada Tugas 6
+
+Pengerjaan Tugas 6 dalam repository ini dibagi lewat prompt bertahap. Saya menggunakan Codex untuk mengaudit kode yang sudah ada, menyusun rencana per file, membantu implementasi serializer, endpoint DRF, automated test, dan integrasi halaman Experience, serta menyiapkan penjelasan README ini. Perubahan tersebut diperiksa dengan Django system check, migration check, test API dan test `main` (88 test lulus pada pengujian terakhir), `node --check`, dan `git diff --check`.
+
+Dalam sesi bantuan ini belum ada verifikasi interaksi Tugas 6 melalui browser yang dikonfirmasi, jadi saya tidak mencatatnya sebagai pengujian yang sudah selesai. Saya tetap perlu meninjau sendiri alur visitor, user biasa, Editor, dan superuser di browser, terutama dialog Edit, perpindahan kategori, tanggal yang dikosongkan, serta tampilan pesan error. AI membantu proses pengerjaan dan review, tetapi isi portofolio, keputusan akhir, dan tanggung jawab atas hasilnya tetap pada saya.
